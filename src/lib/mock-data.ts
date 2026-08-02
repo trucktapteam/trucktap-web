@@ -1,5 +1,14 @@
 import type { Truck } from "./types";
 
+/**
+ * TEMPORARY — DEV/TEST FIXTURES, NOT PRODUCTION DATA.
+ *
+ * Every truck exported from this file exists only because there's no
+ * Supabase `public_trucks` integration yet. None of it should survive
+ * that integration landing — tracked in
+ * https://github.com/trucktapteam/trucktap-web/issues/3.
+ */
+
 const now = Date.now();
 const minutesAgo = (m: number) => new Date(now - m * 60_000).toISOString();
 const hoursAgo = (h: number) => minutesAgo(h * 60);
@@ -8,6 +17,8 @@ const hoursFromNow = (h: number) => new Date(now + h * 60 * 60_000).toISOString(
 const daysFromNow = (d: number) => hoursFromNow(d * 24);
 
 /**
+ * TEMPORARY DEV FIXTURE — not real data, see file header.
+ *
  * One fully-populated mock truck for reviewing the complete page layout.
  * Field shape matches the approved `public_trucks` view contract plus the
  * related tables (locations, reviews, upcoming_stops) a real page would
@@ -169,6 +180,8 @@ export const mockTruck: Truck = {
 };
 
 /**
+ * TEMPORARY TEST FIXTURE — not real data, see file header.
+ *
  * Every optional field left empty/null — no bio, no menu, no photos, no
  * socials, no announcements, no stops, no reviews, no trust badges, never
  * live. Exists to prove every optional section on the profile page hides
@@ -208,6 +221,8 @@ export const sparseMockTruck: Truck = {
 };
 
 /**
+ * TEMPORARY TEST FIXTURE — not real data, see file header.
+ *
  * A mix of present, missing, expired, and past data on the same truck —
  * covers the cases sparseMockTruck can't: an About that only has
  * `description` (no `bio`), an announcement that's expired and must not
@@ -296,8 +311,9 @@ export const mixedMockTruck: Truck = {
 const mockTrucks: Truck[] = [mockTruck, sparseMockTruck, mixedMockTruck];
 
 /**
- * Mock lookup keyed by slug — swap this for a `public_trucks` query once
- * Supabase is connected.
+ * TEMPORARY — mock lookup keyed by slug. Swap this for a `public_trucks`
+ * query once Supabase is connected; see the file header and
+ * https://github.com/trucktapteam/trucktap-web/issues/3.
  */
 export function getMockTruckBySlug(slug: string): Truck | null {
   return mockTrucks.find((t) => t.slug === slug) ?? null;

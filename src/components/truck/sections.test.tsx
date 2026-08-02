@@ -1,0 +1,217 @@
+import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { makeTruck } from "@/lib/test-fixtures";
+import { MenuSection } from "./MenuSection";
+import { UpcomingStopsSection } from "./UpcomingStopsSection";
+import { GallerySection } from "./GallerySection";
+import { AnnouncementBanner } from "./AnnouncementBanner";
+import { AboutSection } from "./AboutSection";
+import { ReviewsSection } from "./ReviewsSection";
+import { TrustFooter } from "./TrustFooter";
+
+const NOW = new Date("2026-08-02T12:00:00.000Z");
+
+/**
+ * These tests protect the "never render an empty/placeholder section"
+ * rules for the truck profile page: every optional section must render
+ * only when there's real data, and hide itself (return null) rather than
+ * show a blank heading or empty card shell.
+ */
+
+describe("MenuSection", () => {
+  it("renders nothing when there are no items and no board photos", () => {
+    const { container } = render(<MenuSection truck={makeTruck()} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders menu items when present", () => {
+    const truck = makeTruck({
+      menu_items: [{ id: "i1", name: "Brisket Plate", price: 16, category: "Plates" }],
+    });
+    render(<MenuSection truck={truck} />);
+    expect(screen.getByText("Menu")).toBeInTheDocument();
+    expect(screen.getByText("Brisket Plate")).toBeInTheDocument();
+  });
+
+  it("renders board photos when there are no items but photos exist", () => {
+    const truck = makeTruck({ menu_images: ["menu-board-1"] });
+    render(<MenuSection truck={truck} />);
+    expect(screen.getByText("Menu")).toBeInTheDocument();
+    expect(screen.getByLabelText("Menu board 1")).toBeInTheDocument();
+  });
+});
+
+describe("UpcomingStopsSection", () => {
+  it("renders nothing when there are no upcoming stops", () => {
+    const { container } = render(<UpcomingStopsSection truck={makeTruck()} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders nothing when the only stop has already ended", () => {
+    const truck = makeTruck({
+      upcomingStops: [
+        {
+          id: "s1",
+          starts_at: "2026-07-30T00:00:00.000Z",
+          ends_at: "2026-07-30T04:00:00.000Z",
+          location_text: "Old spot",
+          status: "scheduled",
+        },
+      ],
+    });
+    const { container } = render(<UpcomingStopsSection truck={truck} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders a future stop", () => {
+    const truck = makeTruck({
+      upcomingStops: [
+        {
+          id: "s1",
+          starts_at: "2026-08-10T00:00:00.000Z",
+          ends_at: "2026-08-10T04:00:00.000Z",
+          location_text: "Farmers Market",
+          status: "scheduled",
+        },
+      ],
+    });
+    render(<UpcomingStopsSection truck={truck} />);
+    expect(screen.getByText("Upcoming Stops")).toBeInTheDocument();
+    expect(screen.getByText("Farmers Market")).toBeInTheDocument();
+  });
+});
+
+describe("GallerySection", () => {
+  it("renders nothing when there are no gallery images", () => {
+    const { container } = render(<GallerySection truck={makeTruck()} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders photos when present", () => {
+    render(<GallerySection truck={makeTruck({ gallery_images: ["photo-1"] })} />);
+    expect(screen.getByText("Photos")).toBeInTheDocument();
+    expect(screen.getByLabelText("Photo 1")).toBeInTheDocument();
+  });
+});
+
+describe("AnnouncementBanner", () => {
+  it("renders nothing when there are no announcements", () => {
+    const { container } = render(<AnnouncementBanner truck={makeTruck()} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders nothing when the only announcement has expired", () => {
+    const truck = makeTruck({
+      announcements: [
+        {
+          id: "a1",
+          message: "expired notice",
+          timestamp: NOW.toISOString(),
+          expires_at: "2026-08-01T00:00:00.000Z",
+        },
+      ],
+    });
+    const { container } = render(<AnnouncementBanner truck={truck} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders an active announcement", () => {
+    const truck = makeTruck({
+      announcements: [{ id: "a1", message: "Running low on brisket today", timestamp: NOW.toISOString() }],
+    });
+    render(<AnnouncementBanner truck={truck} />);
+    expect(screen.getByText("Running low on brisket today")).toBeInTheDocument();
+  });
+});
+
+describe("AboutSection", () => {
+  it("renders nothing when there is no bio and no description", () => {
+    const { container } = render(<AboutSection truck={makeTruck()} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("renders the bio when present", () => {
+    render(<AboutSection truck={makeTruck({ bio: "Slow-smoked BBQ." })} />);
+    expect(screen.getByText("Slow-smoked BBQ.")).toBeInTheDocument();
+  });
+
+  it("falls back to description when there is no bio", () => {
+    render(<AboutSection truck={makeTruck({ bio: null, description: "Fusion tacos." })} />);
+    expect(screen.getByText("Fusion tacos.")).toBeInTheDocument();
+  });
+});
+
+describe("ReviewsSection", () => {
+  it("shows one intentional empty-state message, never a blank list shell", () => {
+    const { container } = render(<ReviewsSection truck={makeTruck()} />);
+    expect(screen.getByText("Reviews")).toBeInTheDocument();
+    expect(screen.getByText(/No reviews yet/)).toBeInTheDocument();
+    expect(container.querySelector("ul")).toBeNull();
+  });
+
+  it("renders reviews when present", () => {
+    const truck = makeTruck({
+      reviews: [
+        {
+          id: "r1",
+          rating: 5,
+          text: "Great food.",
+          created_at: NOW.toISOString(),
+          reviewer_display_name: "Alex P.",
+        },
+      ],
+    });
+    render(<ReviewsSection truck={truck} />);
+    expect(screen.getByText("Great food.")).toBeInTheDocument();
+  });
+
+  it("does not render an owner-reply block when there is no reply", () => {
+    const truck = makeTruck({
+      reviews: [
+        {
+          id: "r1",
+          rating: 5,
+          text: "Great food.",
+          created_at: NOW.toISOString(),
+          reviewer_display_name: "Alex P.",
+        },
+      ],
+    });
+    render(<ReviewsSection truck={truck} />);
+    expect(screen.queryByText(/Reply from/)).toBeNull();
+  });
+
+  it("renders the owner-reply block when a reply is present", () => {
+    const truck = makeTruck({
+      name: "Smoky Wheels BBQ",
+      reviews: [
+        {
+          id: "r1",
+          rating: 5,
+          text: "Great food.",
+          created_at: NOW.toISOString(),
+          reviewer_display_name: "Alex P.",
+          owner_reply: { body: "Thanks Alex!", created_at: NOW.toISOString() },
+        },
+      ],
+    });
+    render(<ReviewsSection truck={truck} />);
+    expect(screen.getByText("Reply from Smoky Wheels BBQ")).toBeInTheDocument();
+    expect(screen.getByText("Thanks Alex!")).toBeInTheDocument();
+  });
+});
+
+describe("TrustFooter", () => {
+  it("hides the badge cluster when there are no trust badges", () => {
+    render(<TrustFooter truck={makeTruck()} />);
+    expect(screen.queryByText("Veteran-Owned")).toBeNull();
+    expect(screen.queryByText("Family-Owned")).toBeNull();
+    expect(screen.getByText(/Profile last updated/)).toBeInTheDocument();
+  });
+
+  it("renders trust badges when present", () => {
+    render(<TrustFooter truck={makeTruck({ trust_badges: ["veteran_owned", "family_owned"] })} />);
+    expect(screen.getByText("Veteran-Owned")).toBeInTheDocument();
+    expect(screen.getByText("Family-Owned")).toBeInTheDocument();
+  });
+});
