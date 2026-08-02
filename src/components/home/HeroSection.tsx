@@ -1,0 +1,149 @@
+import Image from "next/image";
+import { APP_STORE_URL, GOOGLE_PLAY_URL, FACEBOOK_URL, screenshots } from "@/lib/home-data";
+import { heroPanelGradient, panelGridOverlay } from "@/lib/home-gradients";
+
+export function HeroSection() {
+  return (
+    <section id="download" className="px-4 pt-7 pb-14 sm:pt-9 lg:px-6">
+      <div className="mx-auto max-w-6xl">
+        <div
+          className="relative overflow-hidden rounded-[2rem] border border-white/12 p-7 shadow-[0_34px_90px_rgba(17,24,39,0.34)] sm:p-10 lg:grid lg:grid-cols-[1.03fr_0.97fr] lg:items-center lg:gap-11 lg:p-16"
+          style={{ backgroundImage: heroPanelGradient }}
+        >
+          <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: panelGridOverlay, backgroundSize: "42px 42px", opacity: 0.11 }} />
+
+          <div className="relative z-10">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand/28 bg-cream-2 px-3.5 py-2.5 text-xs font-black tracking-[0.04em] text-brand-ink uppercase">
+              <span className="h-2.5 w-2.5 rounded-full bg-success shadow-[0_0_0_5px_rgba(76,175,80,0.18)]" />
+              Built for live food truck chaos
+            </div>
+
+            <h1 className="max-w-[820px] text-balance text-5xl leading-[0.92] font-black tracking-tighter text-white sm:text-6xl lg:text-7xl">
+              Find food trucks that are actually open.
+            </h1>
+
+            <p className="mt-4 max-w-[640px] text-pretty text-lg text-white/78">
+              TruckTap helps you see real food truck locations, discover what is serving nearby, follow your
+              favorites, and stop chasing stale posts across the internet.
+            </p>
+
+            <div className="mt-6 flex flex-wrap gap-3.5" aria-label="App download links">
+              <a
+                href={APP_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Download TruckTap on the App Store"
+                className="w-[168px] shrink-0 overflow-hidden rounded-2xl shadow-[0_12px_28px_rgba(0,0,0,0.24)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(0,0,0,0.34)] active:translate-y-0"
+              >
+                <Image
+                  src="/brand/appstore-badge.svg"
+                  alt="Download on the App Store"
+                  width={168}
+                  height={56}
+                  className="h-auto w-full"
+                />
+              </a>
+              <a
+                href={GOOGLE_PLAY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Get TruckTap on Google Play"
+                className="w-[168px] shrink-0 overflow-hidden rounded-2xl shadow-[0_12px_28px_rgba(0,0,0,0.24)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_18px_36px_rgba(0,0,0,0.34)] active:translate-y-0"
+              >
+                <Image
+                  src="/brand/googleplay-badge.svg"
+                  alt="Get it on Google Play"
+                  width={168}
+                  height={50}
+                  className="h-auto w-full"
+                />
+              </a>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <a
+                href="#screens"
+                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-brand px-6 font-black text-white shadow-[0_15px_30px_rgba(255,107,0,0.28)] transition duration-200 hover:-translate-y-1 hover:bg-brand-dark active:translate-y-0"
+              >
+                See the app
+              </a>
+              <a
+                href="#owners"
+                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-white px-6 font-black text-navy transition duration-200 hover:-translate-y-1 active:translate-y-0"
+              >
+                For truck owners
+              </a>
+            </div>
+
+            <div className="mt-6 flex flex-wrap gap-2.5 text-sm font-extrabold text-white/72" aria-label="TruckTap highlights">
+              {["Real locations", "Open-now discovery", "Favorite updates"].map((t) => (
+                <span key={t} className="rounded-full border border-white/10 bg-white/8 px-3 py-2">
+                  {t}
+                </span>
+              ))}
+            </div>
+
+            <a
+              href={FACEBOOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 flex max-w-[520px] items-center gap-3 rounded-2xl border border-brand/26 bg-white/8 p-3.5 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:border-brand/46 hover:bg-white/11"
+            >
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full border-2 border-white/22 bg-brand text-base font-black text-white shadow-[0_0_24px_rgba(255,107,0,0.32)]">
+                f
+              </span>
+              <span>
+                <strong className="block text-sm text-white">Follow the food truck chaos</strong>
+                <span className="mt-0.5 block text-sm leading-tight text-white/78">
+                  Daily truck finds, posters, memes &amp; local food truck energy.
+                </span>
+              </span>
+            </a>
+          </div>
+
+          <div className="relative z-10 mt-14 h-[380px] sm:h-[460px] lg:mt-0 lg:h-[540px]">
+            <PhoneCollage />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PhoneCollage() {
+  return (
+    <div className="animate-phone-float relative h-full">
+      <div className="absolute top-0 left-[8%] w-[64%] max-w-[290px] -rotate-[5deg] overflow-hidden rounded-[2rem] border-[7px] border-hardline shadow-[0_30px_70px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:-rotate-3">
+        <Image
+          src={`/home/screenshots/${screenshots.liveMap.file}`}
+          alt={screenshots.liveMap.alt}
+          width={1242}
+          height={2688}
+          className="h-auto w-full"
+          priority
+        />
+      </div>
+      <div className="absolute top-[58px] right-[1%] w-[42%] rotate-[7deg] overflow-hidden rounded-3xl border-[5px] border-hardline shadow-[0_30px_70px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:rotate-[5deg]">
+        <Image
+          src={`/home/screenshots/${screenshots.truckProfile.file}`}
+          alt={screenshots.truckProfile.alt}
+          width={1242}
+          height={2688}
+          className="h-auto w-full"
+        />
+      </div>
+      <div className="absolute right-[8%] bottom-4 w-[46%] -rotate-3 overflow-hidden rounded-2xl border-[5px] border-hardline shadow-[0_30px_70px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:-rotate-1">
+        <Image
+          src={`/home/screenshots/${screenshots.truckMenu.file}`}
+          alt={screenshots.truckMenu.alt}
+          width={1242}
+          height={2688}
+          className="h-auto w-full"
+        />
+      </div>
+      <div className="absolute bottom-16 left-0 max-w-[210px] rotate-[4deg] rounded-3xl border-[3px] border-hardline bg-gold p-4 text-sm leading-tight font-black text-navy shadow-[9px_9px_0_var(--color-hardline)] transition duration-200 hover:-translate-y-1 hover:rotate-2">
+        Tonight&apos;s dinner plan should not require detective work.
+      </div>
+    </div>
+  );
+}

@@ -19,6 +19,18 @@
   --color-danger: #f44336;
   --color-star: #ffd700;
 
+  /* Marketing-site-only tokens (gettrucktap.com's visual identity) — used
+     by the homepage's dark panels, warm background, and neo-brutalist
+     accent chips (hard offset shadows + thick borders), layered on top of
+     the shared brand tokens above rather than replacing them. */
+  --color-navy: #111827;
+  --color-gold: #facc15;
+  --color-cream: #fff8ef;
+  --color-cream-2: #ffedd5;
+  --color-brand-ink: #431407;
+  --color-brand-tint: #fed7aa;
+  --color-hardline: #050505;
+
   --shadow-color: 20 14% 20%;
   --shadow-card: 0 1px 2px hsl(var(--shadow-color) / 0.04), 0 8px 24px -12px hsl(var(--shadow-color) / 0.12);
   --shadow-card-hover: 0 2px 4px hsl(var(--shadow-color) / 0.06), 0 16px 32px -12px hsl(var(--shadow-color) / 0.16);
@@ -42,6 +54,14 @@
   --color-danger: var(--color-danger);
   --color-star: var(--color-star);
 
+  --color-navy: var(--color-navy);
+  --color-gold: var(--color-gold);
+  --color-cream: var(--color-cream);
+  --color-cream-2: var(--color-cream-2);
+  --color-brand-ink: var(--color-brand-ink);
+  --color-brand-tint: var(--color-brand-tint);
+  --color-hardline: var(--color-hardline);
+
   --shadow-card: var(--shadow-card);
   --shadow-card-hover: var(--shadow-card-hover);
   --shadow-pop: var(--shadow-pop);
@@ -49,6 +69,8 @@
   --animate-fade-up: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-fade-in: fade-in 0.5s ease-out both;
   --animate-ken-burns: ken-burns 20s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  --animate-phone-float: phone-float 7s ease-in-out infinite;
+  --animate-logo-scroll: logo-scroll 46s linear infinite;
 
   @keyframes fade-up {
     from {
@@ -78,6 +100,25 @@
       transform: scale(1.08);
     }
   }
+
+  @keyframes phone-float {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) rotate(0deg);
+    }
+    50% {
+      transform: translate3d(0, -10px, 0) rotate(0.4deg);
+    }
+  }
+
+  @keyframes logo-scroll {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
 }
 
 /* Subtle film-grain texture for photographic placeholder tiles — a tiled
@@ -91,6 +132,17 @@
   mix-blend-mode: overlay;
   opacity: 0.25;
   pointer-events: none;
+}
+
+/* Faint graph-paper texture behind the marketing homepage — part of
+   gettrucktap.com's existing visual identity, carried over as a reusable
+   utility rather than a one-off inline background. */
+.paper-grid {
+  background-color: var(--color-cream);
+  background-image:
+    linear-gradient(90deg, color-mix(in srgb, var(--color-navy) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--color-navy) 3.5%, transparent) 1px, transparent 1px);
+  background-size: 46px 46px;
 }
 
 html {
