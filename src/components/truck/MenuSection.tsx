@@ -24,6 +24,7 @@ export function MenuSection({ truck }: { truck: Truck }) {
               seed={seed}
               label={`Menu board ${i + 1}`}
               className="aspect-[3/4] rounded-xl shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md"
+              sizes="(min-width: 640px) 33vw, 50vw"
             />
           ))}
         </div>

@@ -1,3 +1,11 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import { getSupabaseStorageHostname } from "@/lib/allowed-image-hosts";
+
+const ALLOWED_HOSTNAME = getSupabaseStorageHostname();
+
 // Moody, multi-stop duotones tuned to read like backlit grill/smoke
 // photography rather than flat brand-color swatches — warm highlight
 // falling off into a deep umber shadow, the way a truck photo lit at
@@ -19,21 +27,61 @@ function hashSeed(seed: string): number {
 }
 
 /**
- * Stand-in for a real photo. Phase 2 is mock-data-only with no Storage
- * URLs to load, so every image slot renders a deterministic, moody
- * gradient "photo" — same layout footprint as the real photo will have
- * once Supabase is connected, styled to feel like art direction rather
- * than an obvious wireframe placeholder.
+ * True only for strings that are both a real http(s) URL — never mock
+ * seeds like "hero-smoky-wheels" — AND on our configured Supabase Storage
+ * host. next/image throws a render-crashing error for any src whose host
+ * isn't in next.config.ts's remotePatterns, so a truck row referencing an
+ * unexpected host (a stock-photo URL, a typo, anything not our own
+ * Storage) must be treated as "not renderable" here too, not just left
+ * for next/image to reject.
+ */
+function isRemoteImageUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    return ALLOWED_HOSTNAME !== null && url.hostname === ALLOWED_HOSTNAME;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Renders a real photo when `seed` is a real Supabase Storage URL, and
+ * falls back to a deterministic, moody gradient "photo" — same layout
+ * footprint either way — when it isn't: missing, empty, a mock seed like
+ * "hero-smoky-wheels", or a URL whose image failed to load. The gradient
+ * fallback is styled to feel like art direction rather than an obvious
+ * wireframe placeholder, since it's still what most trucks without
+ * uploaded photos will show in production.
  */
 export function PlaceholderImage({
   seed,
   label,
   className = "",
+  sizes = "100vw",
 }: {
   seed: string;
   label: string;
   className?: string;
+  sizes?: string;
 }) {
+  const [failed, setFailed] = useState(false);
+
+  if (seed && isRemoteImageUrl(seed) && !failed) {
+    return (
+      <div className={`relative isolate overflow-hidden ${className}`}>
+        <Image
+          src={seed}
+          alt={label}
+          fill
+          sizes={sizes}
+          className="object-cover"
+          onError={() => setFailed(true)}
+        />
+      </div>
+    );
+  }
+
   const gradient = GRADIENTS[hashSeed(seed) % GRADIENTS.length];
 
   return (

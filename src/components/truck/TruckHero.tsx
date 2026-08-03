@@ -9,6 +9,7 @@ export function TruckHero({ truck }: { truck: Truck }) {
           seed={truck.hero_image ?? truck.id}
           label={`${truck.name} hero photo`}
           className="h-full w-full animate-ken-burns"
+          sizes="100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-black/10" />
       </div>
@@ -19,6 +20,7 @@ export function TruckHero({ truck }: { truck: Truck }) {
             seed={truck.logo ?? `${truck.id}-logo`}
             label={`${truck.name} logo`}
             className="h-24 w-24 shrink-0 rounded-2xl border-4 border-white shadow-[var(--shadow-pop)] sm:h-28 sm:w-28"
+            sizes="(min-width: 640px) 112px, 96px"
           />
 
           <div className="min-w-0 animate-fade-up pb-1.5">

@@ -15,6 +15,7 @@ export function GallerySection({ truck }: { truck: Truck }) {
               seed={seed}
               label={`Photo ${i + 1}`}
               className="aspect-square transition-transform duration-300 ease-out hover:scale-110"
+              sizes="(min-width: 1024px) 250px, 33vw"
             />
           </div>
         ))}

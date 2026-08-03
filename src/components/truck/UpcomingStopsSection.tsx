@@ -24,6 +24,7 @@ export function UpcomingStopsSection({ truck }: { truck: Truck }) {
                 seed={stop.flyer_image}
                 label="Event flyer"
                 className="h-16 w-16 shrink-0 rounded-xl shadow-sm"
+                sizes="64px"
               />
             )}
             <div className="min-w-0">
