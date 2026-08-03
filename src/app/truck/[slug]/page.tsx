@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getMockTruckBySlug } from "@/lib/mock-data";
+import { getTruckBySlug } from "@/lib/truck-data";
 import { TruckHero } from "@/components/truck/TruckHero";
 import { StatusBar } from "@/components/truck/StatusBar";
 import { QuickActions } from "@/components/truck/QuickActions";
@@ -19,7 +19,7 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const truck = getMockTruckBySlug(slug);
+  const truck = await getTruckBySlug(slug);
   if (!truck) return {};
 
   const description = (truck.bio ?? truck.description ?? `${truck.name} on TruckTap.`).slice(0, 155);
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TruckProfilePage({ params }: Props) {
   const { slug } = await params;
-  const truck = getMockTruckBySlug(slug);
+  const truck = await getTruckBySlug(slug);
 
   if (!truck) notFound();
 
