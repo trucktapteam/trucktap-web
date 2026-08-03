@@ -13,6 +13,13 @@ import { AnthemSection } from "@/components/home/AnthemSection";
 import { RollingTrucksSection } from "@/components/home/RollingTrucksSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
 
+// The page is otherwise fully static, but RollingTrucksSection now reads
+// live public_trucks data — without this it would be fetched once at
+// build time and only ever update on the next deploy. ISR re-generates it
+// in the background at most once an hour instead, keeping the static
+// performance/caching without going fully dynamic.
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
   title: { absolute: "TruckTap | Find Food Trucks That Are Actually Open" },
   description:

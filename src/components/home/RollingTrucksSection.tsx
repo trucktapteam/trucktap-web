@@ -1,8 +1,15 @@
 import Image from "next/image";
-import { rollingTrucks } from "@/lib/home-data";
+import Link from "next/link";
+import { getRollingTrucksOrFallback } from "@/lib/rolling-trucks";
+import { PlaceholderImage } from "@/components/truck/PlaceholderImage";
 import { rollingPanelGradient, panelGridOverlay } from "@/lib/home-gradients";
 
-export function RollingTrucksSection() {
+const CARD_CLASS =
+  "relative grid h-28 w-40 shrink-0 place-items-center overflow-hidden rounded-[1.35rem] border border-white/72 bg-white/96 p-4 shadow-[0_18px_40px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.85)] transition duration-200 hover:z-10 hover:-translate-y-1.5 hover:border-brand/56 hover:shadow-[0_24px_52px_rgba(0,0,0,0.32),0_0_34px_rgba(255,107,0,0.2)] sm:h-32 sm:w-44";
+
+export async function RollingTrucksSection() {
+  const result = await getRollingTrucksOrFallback();
+
   return (
     <section className="px-4 py-14 sm:py-20 lg:px-6">
       <div className="mx-auto max-w-6xl">
@@ -24,12 +31,12 @@ export function RollingTrucksSection() {
                 Already Rolling with TruckTap
               </h2>
               <p className="mt-3.5 max-w-[660px] text-pretty text-lg text-white/74">
-                More than 40 food trucks are already using TruckTap to help customers find them.
+                A growing network of food trucks is already using TruckTap to help customers find them.
               </p>
             </div>
             <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border-[3px] border-hardline bg-gold px-3.5 py-2.5 font-black text-brand-ink shadow-[6px_6px_0_var(--color-hardline)]">
               <span className="h-2.5 w-2.5 rounded-full bg-success shadow-[0_0_0_5px_rgba(76,175,80,0.18)]" />
-              40 trucks and growing
+              TruckTap Partner Network
             </span>
           </div>
 
@@ -43,20 +50,34 @@ export function RollingTrucksSection() {
             <div className="animate-logo-scroll flex w-max group-hover:[animation-play-state:paused] group-focus-within:[animation-play-state:paused]">
               {[false, true].map((duplicate) => (
                 <div key={String(duplicate)} className="flex gap-4 pr-4" aria-hidden={duplicate}>
-                  {rollingTrucks.map((truck) => (
-                    <div
-                      key={truck.file}
-                      className="relative grid h-28 w-40 shrink-0 place-items-center overflow-hidden rounded-[1.35rem] border border-white/72 bg-white/96 p-4 shadow-[0_18px_40px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.85)] transition duration-200 hover:z-10 hover:-translate-y-1.5 hover:border-brand/56 hover:shadow-[0_24px_52px_rgba(0,0,0,0.32),0_0_34px_rgba(255,107,0,0.2)] sm:h-32 sm:w-44"
-                    >
-                      <Image
-                        src={`/home/trucks/${truck.file}`}
-                        alt={duplicate ? "" : truck.alt}
-                        fill
-                        className="object-contain p-1"
-                        sizes="180px"
-                      />
-                    </div>
-                  ))}
+                  {result.source === "live"
+                    ? result.trucks.map((truck) => (
+                        <Link
+                          key={truck.id}
+                          href={`/truck/${truck.slug}`}
+                          tabIndex={duplicate ? -1 : 0}
+                          className={CARD_CLASS}
+                        >
+                          <PlaceholderImage
+                            seed={truck.logo}
+                            label={duplicate ? "" : `${truck.name} logo`}
+                            className="h-full w-full"
+                            sizes="180px"
+                            fit="contain"
+                          />
+                        </Link>
+                      ))
+                    : result.trucks.map((truck) => (
+                        <div key={truck.file} className={CARD_CLASS}>
+                          <Image
+                            src={`/home/trucks/${truck.file}`}
+                            alt={duplicate ? "" : truck.alt}
+                            fill
+                            className="object-contain p-1"
+                            sizes="180px"
+                          />
+                        </div>
+                      ))}
                 </div>
               ))}
             </div>

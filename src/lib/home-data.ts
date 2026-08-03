@@ -1,9 +1,8 @@
 /**
  * Static content for the marketing homepage — mirrors gettrucktap.com
- * (the live GitHub Pages site) as of the rebuild. Kept as data rather than
- * hardcoded JSX so the rolling truck list in particular can be updated
- * without touching component code, without the old site's runtime GitHub
- * API fetch.
+ * (the live GitHub Pages site) as of the rebuild. The rolling truck
+ * marquee itself is now live data (see lib/rolling-trucks.ts);
+ * `fallbackRollingTrucks` below is only the outage backup for that query.
  */
 
 export const APP_STORE_URL = "https://apps.apple.com/us/app/trucktap/id6762240100";
@@ -13,47 +12,22 @@ export const FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61574337256
 export const ANTHEM_YOUTUBE_WATCH_URL = "https://youtube.com/shorts/rpr4vHIFAHY?feature=share";
 export const ANTHEM_YOUTUBE_EMBED_URL = "https://www.youtube.com/embed/rpr4vHIFAHY";
 
-export type RollingTruck = { file: string; alt: string };
+export type FallbackRollingTruck = { file: string; alt: string };
 
-/** Every truck logo currently displayed in the "Already Rolling" marquee. */
-export const rollingTrucks: RollingTruck[] = [
+/**
+ * Small static backup for the "Already Rolling" marquee, used only when
+ * the live `public_trucks` query fails (see lib/rolling-trucks.ts) — kept
+ * short since this is an outage path, not the normal render path.
+ */
+export const fallbackRollingTrucks: FallbackRollingTruck[] = [
   { file: "502-cakery.jpg", alt: "502 Cakery" },
   { file: "acme-chicken-bowls.jpeg", alt: "Acme Chicken Bowls" },
   { file: "bussin-bites.jpg", alt: "Bussin Bites" },
   { file: "f-bomb.jpg", alt: "F-Bomb" },
   { file: "joyces-kitchen.jpg", alt: "Joyce's Kitchen" },
   { file: "mericana.jpg", alt: "Mericana" },
-  { file: "sonny-boys.png", alt: "Sonny Boys" },
-  { file: "sunny-girls.png", alt: "Sunny Girls" },
-  { file: "archies-snowballs.jpg", alt: "Archie's Snowballs" },
-  { file: "backyard-bites.jpg", alt: "Backyard Bites" },
-  { file: "balco-funnels.jpg", alt: "Balco Funnels" },
-  { file: "big-papa-jakes.jpg", alt: "Big Papa Jake's" },
-  { file: "cupcake-caboose.jpg", alt: "Cupcake Caboose" },
-  { file: "drop-it-like-its-tot.jpg", alt: "Drop It Like It's Tot" },
-  { file: "el-taco-rico.png", alt: "El Taco Rico" },
-  { file: "everetts-sweets.jpg", alt: "Everett's Sweets" },
-  { file: "exqueeze-me.jpg", alt: "Exqueeze Me" },
-  { file: "get-sauced.jpg", alt: "Get Sauced" },
-  { file: "gueros-salsa.png", alt: "Guero's Salsa" },
-  { file: "hillbilly-haven.png", alt: "Hillbilly Haven" },
-  { file: "ice-ice-shavy.jpg", alt: "Ice Ice Shavy" },
-  { file: "its-forking-good.jpg", alt: "It's Forking Good" },
-  { file: "j-mos.jpg", alt: "J Mo's" },
-  { file: "miss-steaks.jpg", alt: "Miss Steaks" },
-  { file: "momma-rose.jpg", alt: "Momma Rose" },
-  { file: "oktoberfeast.jpg", alt: "Oktoberfeast" },
   { file: "papa-pasta.jpg", alt: "Papa Pasta" },
-  { file: "pelons-tacos.jpg", alt: "Pelon's Tacos" },
-  { file: "pico-de-gallo.png", alt: "Pico de Gallo" },
-  { file: "poppys-dogs.jpg", alt: "Poppy's Dogs" },
   { file: "quench-lemonade.jpg", alt: "Quench Lemonade" },
-  { file: "r-and-b-bbq.png", alt: "R&B BBQ" },
-  { file: "smash-n-roll.jpg", alt: "Smash N Roll" },
-  { file: "sno-bros.jpg", alt: "Sno Bros" },
-  { file: "streets-gyros.jpg", alt: "Streets Gyros" },
-  { file: "terrie-kays.jpg", alt: "Terrie Kay's" },
-  { file: "the-cooking-leprechaun.jpg", alt: "The Cooking Leprechaun" },
   { file: "the-pizza-guys.jpg", alt: "The Pizza Guys" },
   { file: "the-station.png", alt: "The Station" },
 ];

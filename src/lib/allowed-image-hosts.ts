@@ -19,3 +19,22 @@ export function getSupabaseStorageHostname(): string | null {
     return null;
   }
 }
+
+/**
+ * True only for strings that are both a real http(s) URL — never mock
+ * seeds or relative paths — AND on our configured Supabase Storage host.
+ * Shared by PlaceholderImage (runtime render check) and any server-side
+ * data layer that needs to decide whether a stored `logo`/image column is
+ * actually renderable before sending it to the client, so a stock-photo
+ * URL or other unexpected host is rejected the same way in both places.
+ */
+export function isSupabaseStorageImageUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    const hostname = getSupabaseStorageHostname();
+    return hostname !== null && url.hostname === hostname;
+  } catch {
+    return false;
+  }
+}

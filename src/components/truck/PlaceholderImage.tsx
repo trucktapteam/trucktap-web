@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { getSupabaseStorageHostname } from "@/lib/allowed-image-hosts";
-
-const ALLOWED_HOSTNAME = getSupabaseStorageHostname();
+import { isSupabaseStorageImageUrl } from "@/lib/allowed-image-hosts";
 
 // Moody, multi-stop duotones tuned to read like backlit grill/smoke
 // photography rather than flat brand-color swatches — warm highlight
@@ -27,25 +25,6 @@ function hashSeed(seed: string): number {
 }
 
 /**
- * True only for strings that are both a real http(s) URL — never mock
- * seeds like "hero-smoky-wheels" — AND on our configured Supabase Storage
- * host. next/image throws a render-crashing error for any src whose host
- * isn't in next.config.ts's remotePatterns, so a truck row referencing an
- * unexpected host (a stock-photo URL, a typo, anything not our own
- * Storage) must be treated as "not renderable" here too, not just left
- * for next/image to reject.
- */
-function isRemoteImageUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
-    return ALLOWED_HOSTNAME !== null && url.hostname === ALLOWED_HOSTNAME;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Renders a real photo when `seed` is a real Supabase Storage URL, and
  * falls back to a deterministic, moody gradient "photo" — same layout
  * footprint either way — when it isn't: missing, empty, a mock seed like
@@ -59,15 +38,17 @@ export function PlaceholderImage({
   label,
   className = "",
   sizes = "100vw",
+  fit = "cover",
 }: {
   seed: string;
   label: string;
   className?: string;
   sizes?: string;
+  fit?: "cover" | "contain";
 }) {
   const [failed, setFailed] = useState(false);
 
-  if (seed && isRemoteImageUrl(seed) && !failed) {
+  if (seed && isSupabaseStorageImageUrl(seed) && !failed) {
     return (
       <div className={`relative isolate overflow-hidden ${className}`}>
         <Image
@@ -75,7 +56,7 @@ export function PlaceholderImage({
           alt={label}
           fill
           sizes={sizes}
-          className="object-cover"
+          className={fit === "contain" ? "object-contain" : "object-cover"}
           onError={() => setFailed(true)}
         />
       </div>
