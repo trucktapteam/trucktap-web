@@ -9,9 +9,9 @@ export function TrustFooter({ truck }: { truck: Truck }) {
   const hasBadges = truck.trust_badges.length > 0;
 
   return (
-    <section className="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-5 text-xs text-muted">
+    <section className="flex flex-col gap-3 border-t border-border pt-6 text-xs text-muted sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
       {hasBadges && (
-        <div className="mr-auto flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 sm:mr-auto">
           {truck.trust_badges.map((badge) => (
             <span
               key={badge}

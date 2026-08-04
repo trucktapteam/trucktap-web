@@ -4,6 +4,7 @@ import { getTruckBySlug } from "@/lib/truck-data";
 import { TruckHero } from "@/components/truck/TruckHero";
 import { StatusBar } from "@/components/truck/StatusBar";
 import { QuickActions } from "@/components/truck/QuickActions";
+import { ConnectLinks } from "@/components/truck/ConnectLinks";
 import { AnnouncementBanner } from "@/components/truck/AnnouncementBanner";
 import { UpcomingStopsSection } from "@/components/truck/UpcomingStopsSection";
 import { AboutSection } from "@/components/truck/AboutSection";
@@ -11,6 +12,7 @@ import { MenuSection } from "@/components/truck/MenuSection";
 import { GallerySection } from "@/components/truck/GallerySection";
 import { ReviewsSection } from "@/components/truck/ReviewsSection";
 import { AppDownloadCta } from "@/components/truck/AppDownloadCta";
+import { TruckQrPoster } from "@/components/truck/TruckQrPoster";
 import { TrustFooter } from "@/components/truck/TrustFooter";
 import { StructuredData } from "@/components/truck/StructuredData";
 import { Reveal } from "@/components/truck/Reveal";
@@ -54,31 +56,44 @@ export default async function TruckProfilePage({ params }: Props) {
               matching the approved wireframe), pinned to a sticky right
               column on desktop via explicit grid placement — same
               components, no duplicated markup. */}
-          <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:col-start-2">
+          <aside className="flex flex-col gap-5 lg:sticky lg:top-6 lg:col-start-2">
             <Reveal delayMs={0}>
               <StatusBar truck={truck} />
             </Reveal>
             <Reveal delayMs={80}>
               <QuickActions truck={truck} />
             </Reveal>
-            <Reveal delayMs={160} className="hidden lg:block">
+            <Reveal delayMs={120}>
+              <ConnectLinks truck={truck} />
+            </Reveal>
+            {/* A visual break rather than another card — signals "get the
+                app" is a different tier from the status/actions above it,
+                which stay tightly grouped since they're both about
+                reaching this specific truck right now. */}
+            <Reveal delayMs={160} className="hidden border-t border-border/70 pt-5 lg:block">
               <AppDownloadCta compact />
+            </Reveal>
+            <Reveal delayMs={220}>
+              <TruckQrPoster truck={truck} variant="sidebar" />
             </Reveal>
           </aside>
 
           <div className="flex flex-col gap-12 lg:col-start-1 lg:row-start-1">
             <AnnouncementBanner truck={truck} />
-            <Reveal>
-              <UpcomingStopsSection truck={truck} />
-            </Reveal>
+            {/* Order matches how customers actually browse: who are they? →
+                where will they be? → what do they look like? → what do
+                they serve? → what do people say? */}
             <Reveal>
               <AboutSection truck={truck} />
             </Reveal>
             <Reveal>
-              <MenuSection truck={truck} />
+              <UpcomingStopsSection truck={truck} />
             </Reveal>
             <Reveal>
               <GallerySection truck={truck} />
+            </Reveal>
+            <Reveal>
+              <MenuSection truck={truck} />
             </Reveal>
             <Reveal>
               <ReviewsSection truck={truck} />
@@ -86,6 +101,7 @@ export default async function TruckProfilePage({ params }: Props) {
             <div className="lg:hidden">
               <AppDownloadCta />
             </div>
+            <TruckQrPoster truck={truck} variant="mobile" />
             <TrustFooter truck={truck} />
           </div>
         </div>

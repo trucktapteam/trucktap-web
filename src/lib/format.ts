@@ -86,3 +86,10 @@ export function getUpcomingStops(truck: Truck, now: Date = new Date()) {
     return new Date(s.ends_at).getTime() > now.getTime();
   });
 }
+
+/** `null` when there are no reviews yet — shared by the hero identity summary and ReviewsSection. */
+export function getRatingSummary(truck: Truck): { average: number; count: number } | null {
+  if (truck.reviews.length === 0) return null;
+  const average = truck.reviews.reduce((sum, r) => sum + r.rating, 0) / truck.reviews.length;
+  return { average, count: truck.reviews.length };
+}

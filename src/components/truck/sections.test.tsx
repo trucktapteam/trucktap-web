@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { makeTruck } from "@/lib/test-fixtures";
 import { MenuSection } from "./MenuSection";
 import { UpcomingStopsSection } from "./UpcomingStopsSection";
@@ -78,6 +78,39 @@ describe("UpcomingStopsSection", () => {
     render(<UpcomingStopsSection truck={truck} />);
     expect(screen.getByText("Upcoming Stops")).toBeInTheDocument();
     expect(screen.getByText("Farmers Market")).toBeInTheDocument();
+  });
+
+  function makeFutureStops(count: number) {
+    return Array.from({ length: count }, (_, i) => ({
+      id: `s${i}`,
+      starts_at: `2026-08-${String(10 + i).padStart(2, "0")}T00:00:00.000Z`,
+      ends_at: `2026-08-${String(10 + i).padStart(2, "0")}T04:00:00.000Z`,
+      location_text: `Stop ${i}`,
+      status: "scheduled" as const,
+    }));
+  }
+
+  it("does not show a toggle when there are 5 or fewer stops", () => {
+    const truck = makeTruck({ upcomingStops: makeFutureStops(5) });
+    render(<UpcomingStopsSection truck={truck} />);
+    expect(screen.getAllByText(/Stop \d/)).toHaveLength(5);
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("shows only the first 5 stops with a working 'Show all' / 'Show fewer' toggle when there are more", () => {
+    const truck = makeTruck({ upcomingStops: makeFutureStops(8) });
+    render(<UpcomingStopsSection truck={truck} />);
+
+    expect(screen.getAllByText(/Stop \d/)).toHaveLength(5);
+    const toggle = screen.getByRole("button", { name: "Show all 8 upcoming stops" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+    expect(screen.getAllByText(/Stop \d/)).toHaveLength(8);
+    expect(screen.getByRole("button", { name: "Show fewer" })).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Show fewer" }));
+    expect(screen.getAllByText(/Stop \d/)).toHaveLength(5);
   });
 });
 

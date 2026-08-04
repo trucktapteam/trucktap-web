@@ -39,16 +39,53 @@ export function PlaceholderImage({
   className = "",
   sizes = "100vw",
   fit = "cover",
+  fallback = "gradient",
+  onImageError,
+  mode = "fill",
 }: {
   seed: string;
   label: string;
   className?: string;
   sizes?: string;
   fit?: "cover" | "contain";
+  /** "hide" renders nothing instead of the gradient — for spots (like menu-item
+   * thumbnails) that must collapse to a clean text-only layout rather than show
+   * decorative art when there's no real photo. */
+  fallback?: "gradient" | "hide";
+  /** Fires when a real image fails to load, in addition to (not instead of)
+   * this component's own fallback — lets a caller with `fallback="hide"` also
+   * collapse a wrapping element (e.g. an otherwise-empty click target). */
+  onImageError?: () => void;
+  /** "fill" (default) fills a sized parent — the usual case, everywhere a
+   * slot has a fixed footprint (thumbnails, hero banners, cards). "auto" is
+   * for viewers with no predetermined box (the lightbox): no wrapping
+   * container, no `fill` — the image sizes itself from its own real aspect
+   * ratio, so `className` should carry max-width/max-height constraints
+   * directly (e.g. `max-h-[90vh] max-w-[90vw]`) rather than a fixed box. */
+  mode?: "fill" | "auto";
 }) {
   const [failed, setFailed] = useState(false);
 
   if (seed && isSupabaseStorageImageUrl(seed) && !failed) {
+    const fitClass = fit === "contain" ? "object-contain" : "object-cover";
+
+    if (mode === "auto") {
+      return (
+        <Image
+          src={seed}
+          alt={label}
+          width={1600}
+          height={1600}
+          sizes={sizes}
+          className={`h-auto w-auto ${fitClass} ${className}`}
+          onError={() => {
+            setFailed(true);
+            onImageError?.();
+          }}
+        />
+      );
+    }
+
     return (
       <div className={`relative isolate overflow-hidden ${className}`}>
         <Image
@@ -56,20 +93,30 @@ export function PlaceholderImage({
           alt={label}
           fill
           sizes={sizes}
-          className={fit === "contain" ? "object-contain" : "object-cover"}
-          onError={() => setFailed(true)}
+          className={fitClass}
+          onError={() => {
+            setFailed(true);
+            onImageError?.();
+          }}
         />
       </div>
     );
   }
 
+  if (fallback === "hide") return null;
+
   const gradient = GRADIENTS[hashSeed(seed) % GRADIENTS.length];
+  // "auto" mode has no sized parent to fill (that's the point — the real
+  // image sizes itself from its own aspect ratio), so the decorative
+  // fallback needs its own visible box size when it's the one rendering,
+  // rather than collapsing to nothing.
+  const autoFallbackSize = mode === "auto" ? "aspect-square h-[60vh]" : "";
 
   return (
     <div
       role="img"
       aria-label={label}
-      className={`grain relative isolate overflow-hidden ${className}`}
+      className={`grain relative isolate overflow-hidden ${autoFallbackSize} ${className}`}
       style={{ backgroundImage: gradient }}
     >
       <div
