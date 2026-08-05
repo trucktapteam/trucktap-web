@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { PlaceholderImage } from "./PlaceholderImage";
 
 // Matches the fake NEXT_PUBLIC_SUPABASE_URL set in vitest.setup.ts — the
@@ -61,5 +61,73 @@ describe("PlaceholderImage", () => {
     // The broken <img> is replaced by the decorative placeholder, not left broken.
     expect(document.querySelector("img")).toBeNull();
     expect(screen.getByRole("img", { name: "Truck hero photo" })).toBeInTheDocument();
+  });
+
+  describe('fit="cover-panoramic" (hero crop)', () => {
+    function fireLoadWithAspectRatio(img: HTMLImageElement, width: number, height: number) {
+      Object.defineProperty(img, "naturalWidth", { value: width, configurable: true });
+      Object.defineProperty(img, "naturalHeight", { value: height, configurable: true });
+      fireEvent.load(img);
+    }
+
+    // Regression test: TestTruck 7/25's hero photo is an 8:1 stitched
+    // panorama. Center-cropped by a fixed ~3:1 container like any ordinary
+    // photo, that crops away most of the frame and can cut out the truck
+    // entirely. Once the real (extreme) aspect ratio is known, the crop
+    // must switch to "contain" so nothing gets cropped away.
+    //
+    // next/image defers the user-facing onLoad until after img.decode()
+    // resolves (see next/dist/client/image-component.js), so the class
+    // change lands a microtask after fireEvent.load — hence `await waitFor`.
+    it("switches to object-contain once an extreme-aspect-ratio image loads", async () => {
+      render(<PlaceholderImage seed={REAL_URL} label="Hero photo" fit="cover-panoramic" />);
+      const img = screen.getByAltText("Hero photo") as HTMLImageElement;
+
+      expect(img.className).toContain("object-cover");
+      fireLoadWithAspectRatio(img, 6500, 800); // ~8:1 panorama
+
+      await waitFor(() => expect(img.className).toContain("object-contain"));
+      expect(img.className).not.toContain("object-cover");
+      // The letterbox bars get a solid backdrop instead of being left blank.
+      expect(img.parentElement?.className).toContain("bg-ink");
+    });
+
+    it("keeps object-cover for an ordinary truck-photo aspect ratio", async () => {
+      render(<PlaceholderImage seed={REAL_URL} label="Hero photo" fit="cover-panoramic" />);
+      const img = screen.getByAltText("Hero photo") as HTMLImageElement;
+
+      fireLoadWithAspectRatio(img, 1600, 900); // ~1.78:1, an ordinary wide photo
+      // next/image marks the load handled via a JS property (not an HTML
+      // attribute), so flush the pending decode()-then microtask/macrotask
+      // queue with a real tick instead of asserting on that property.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(img.className).toContain("object-cover");
+      expect(img.className).not.toContain("object-contain");
+      expect(img.parentElement?.className).not.toContain("bg-ink");
+    });
+
+    it("also catches an extreme tall (portrait panorama) aspect ratio", async () => {
+      render(<PlaceholderImage seed={REAL_URL} label="Hero photo" fit="cover-panoramic" />);
+      const img = screen.getByAltText("Hero photo") as HTMLImageElement;
+
+      fireLoadWithAspectRatio(img, 800, 6500); // ~1:8 portrait panorama
+
+      await waitFor(() => expect(img.className).toContain("object-contain"));
+    });
+
+    it('does not affect plain fit="cover" (the default) even for an extreme-aspect image', async () => {
+      render(<PlaceholderImage seed={REAL_URL} label="Hero photo" />);
+      const img = screen.getByAltText("Hero photo") as HTMLImageElement;
+
+      fireLoadWithAspectRatio(img, 6500, 800);
+      // next/image marks the load handled via a JS property (not an HTML
+      // attribute), so flush the pending decode()-then microtask/macrotask
+      // queue with a real tick instead of asserting on that property.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(img.className).toContain("object-cover");
+      expect(img.className).not.toContain("object-contain");
+    });
   });
 });

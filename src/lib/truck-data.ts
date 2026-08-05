@@ -108,6 +108,24 @@ function toStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
 }
 
+const MENU_BOARD_LABEL_PREFIX = "menu-board:";
+
+/**
+ * The owner app's dedicated "photograph the whole board" upload flow labels
+ * that entry by literally prefixing the stored URL with `"menu-board:"` —
+ * as opposed to a photo captured while adding an individual menu item,
+ * which lands in this same `menu_images` array unprefixed. Strip the label
+ * so the real Supabase Storage URL underneath resolves normally; left
+ * on, `new URL("menu-board:https://...")` parses "menu-board:" itself as
+ * the protocol, so isSupabaseStorageImageUrl rejects it and the board
+ * photo falls back to the decorative gradient instead of the real board.
+ */
+export function toMenuImageUrls(value: unknown): string[] {
+  return toStringArray(value).map((entry) =>
+    entry.startsWith(MENU_BOARD_LABEL_PREFIX) ? entry.slice(MENU_BOARD_LABEL_PREFIX.length) : entry
+  );
+}
+
 function mapMenuItems(value: unknown): MenuItem[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -267,7 +285,7 @@ export async function getTruckBySlug(slug: string): Promise<Truck | null> {
     hero_image: truckRow.hero_image,
     logo: truckRow.logo,
     gallery_images: toStringArray(truckRow.gallery_images),
-    menu_images: toStringArray(truckRow.menu_images),
+    menu_images: toMenuImageUrls(truckRow.menu_images),
     menu_items: mapMenuItems(truckRow.menu_items),
     announcements: mapAnnouncements(truckRow.announcements),
     is_verified: truckRow.is_verified,

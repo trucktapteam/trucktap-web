@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { Truck } from "@/lib/types";
 import { formatDateTime, getUpcomingStops } from "@/lib/format";
 import { PlaceholderImage } from "./PlaceholderImage";
 import { SectionHeading } from "./SectionHeading";
+import { GalleryLightbox } from "./GalleryLightbox";
 
 const PREVIEW_COUNT = 5;
 
@@ -12,11 +13,26 @@ export function UpcomingStopsSection({ truck }: { truck: Truck }) {
   const stops = getUpcomingStops(truck);
   const [expanded, setExpanded] = useState(false);
 
+  // Tracked by stop id (not array index) since the visible slice can
+  // shrink/reorder independently — its own state and its own single-image
+  // array, isolated from every other photo viewer on the page (gallery,
+  // menu board, menu items).
+  const [openStopId, setOpenStopId] = useState<string | null>(null);
+  const triggerRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  const handleClose = useCallback(() => {
+    setOpenStopId((id) => {
+      triggerRefs.current[id ?? ""]?.focus();
+      return null;
+    });
+  }, []);
+
   // No section at all when there's nothing scheduled — never an empty shell.
   if (stops.length === 0) return null;
 
   const hasMore = stops.length > PREVIEW_COUNT;
   const visibleStops = expanded ? stops : stops.slice(0, PREVIEW_COUNT);
+  const openStop = openStopId ? (stops.find((s) => s.id === openStopId) ?? null) : null;
 
   return (
     <section>
@@ -29,12 +45,22 @@ export function UpcomingStopsSection({ truck }: { truck: Truck }) {
             className="flex gap-3.5 rounded-2xl border border-border bg-white p-3.5 shadow-[var(--shadow-card)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)]"
           >
             {stop.flyer_image ? (
-              <PlaceholderImage
-                seed={stop.flyer_image}
-                label="Event flyer"
-                className="h-16 w-16 shrink-0 rounded-xl shadow-sm"
-                sizes="64px"
-              />
+              <button
+                ref={(el) => {
+                  triggerRefs.current[stop.id] = el;
+                }}
+                type="button"
+                onClick={() => setOpenStopId(stop.id)}
+                aria-label={`Open event flyer for ${stop.location_text}`}
+                className="block h-16 w-16 shrink-0 overflow-hidden rounded-xl shadow-sm focus-visible:ring-2 focus-visible:ring-brand"
+              >
+                <PlaceholderImage
+                  seed={stop.flyer_image}
+                  label="Event flyer"
+                  className="h-full w-full"
+                  sizes="64px"
+                />
+              </button>
             ) : (
               <DateChip iso={stop.starts_at} />
             )}
@@ -71,6 +97,15 @@ export function UpcomingStopsSection({ truck }: { truck: Truck }) {
           {expanded ? "Show fewer" : `Show all ${stops.length} upcoming stops`}
           <ChevronIcon expanded={expanded} />
         </button>
+      )}
+
+      {openStop?.flyer_image && (
+        <GalleryLightbox
+          photos={[openStop.flyer_image]}
+          truckName={truck.name}
+          initialIndex={0}
+          onClose={handleClose}
+        />
       )}
     </section>
   );

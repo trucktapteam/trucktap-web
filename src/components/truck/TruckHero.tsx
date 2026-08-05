@@ -15,6 +15,7 @@ export function TruckHero({ truck }: { truck: Truck }) {
           label={`${truck.name} hero photo`}
           className="h-full w-full animate-ken-burns"
           sizes="100vw"
+          fit="cover-panoramic"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-black/10" />
       </div>

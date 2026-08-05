@@ -24,6 +24,12 @@ function hashSeed(seed: string): number {
   return hash;
 }
 
+// Ordinary truck photos (portrait phone shots through wide landscape shots)
+// land well inside this range, so "cover-panoramic" crops them exactly like
+// "cover" always has. Only a stitched/extreme-panorama upload — several
+// times wider (or taller) than it is the other way — crosses it.
+const PANORAMIC_ASPECT_RATIO_THRESHOLD = 2.4;
+
 /**
  * Renders a real photo when `seed` is a real Supabase Storage URL, and
  * falls back to a deterministic, moody gradient "photo" — same layout
@@ -47,7 +53,14 @@ export function PlaceholderImage({
   label: string;
   className?: string;
   sizes?: string;
-  fit?: "cover" | "contain";
+  /** "cover-panoramic" behaves exactly like "cover" for ordinary photos, but
+   * once the real image's own pixel dimensions are known (after it loads)
+   * an extreme-aspect-ratio upload — a stitched panorama far wider or
+   * taller than a normal truck photo — switches to "contain" instead, so a
+   * fixed-aspect slot (the hero) doesn't crop away most of a panorama no
+   * single crop position could have saved. Deterministic and content-only:
+   * no owner-set focal point involved. */
+  fit?: "cover" | "contain" | "cover-panoramic";
   /** "hide" renders nothing instead of the gradient — for spots (like menu-item
    * thumbnails) that must collapse to a clean text-only layout rather than show
    * decorative art when there's no real photo. */
@@ -65,9 +78,26 @@ export function PlaceholderImage({
   mode?: "fill" | "auto";
 }) {
   const [failed, setFailed] = useState(false);
+  // Only ever set for fit="cover-panoramic", once the loaded image's real
+  // dimensions reveal an extreme aspect ratio — starts false so ordinary
+  // "cover" cropping is what paints first, same as before this prop existed.
+  const [isPanoramic, setIsPanoramic] = useState(false);
 
   if (seed && isSupabaseStorageImageUrl(seed) && !failed) {
-    const fitClass = fit === "contain" ? "object-contain" : "object-cover";
+    const fitClass = fit === "contain" || isPanoramic ? "object-contain" : "object-cover";
+
+    const handleLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+      if (fit !== "cover-panoramic") return;
+      const img = e.currentTarget;
+      if (!img.naturalWidth || !img.naturalHeight) return;
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      if (
+        aspectRatio > PANORAMIC_ASPECT_RATIO_THRESHOLD ||
+        aspectRatio < 1 / PANORAMIC_ASPECT_RATIO_THRESHOLD
+      ) {
+        setIsPanoramic(true);
+      }
+    };
 
     if (mode === "auto") {
       return (
@@ -78,6 +108,7 @@ export function PlaceholderImage({
           height={1600}
           sizes={sizes}
           className={`h-auto w-auto ${fitClass} ${className}`}
+          onLoad={handleLoad}
           onError={() => {
             setFailed(true);
             onImageError?.();
@@ -87,13 +118,16 @@ export function PlaceholderImage({
     }
 
     return (
-      <div className={`relative isolate overflow-hidden ${className}`}>
+      <div
+        className={`relative isolate overflow-hidden ${isPanoramic ? "bg-ink" : ""} ${className}`}
+      >
         <Image
           src={seed}
           alt={label}
           fill
           sizes={sizes}
           className={fitClass}
+          onLoad={handleLoad}
           onError={() => {
             setFailed(true);
             onImageError?.();
