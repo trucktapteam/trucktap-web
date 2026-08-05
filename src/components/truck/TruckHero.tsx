@@ -1,23 +1,129 @@
+"use client";
+
+import { useCallback, useRef, useState } from "react";
 import type { Truck } from "@/lib/types";
 import { getRatingSummary } from "@/lib/format";
+import { isSupabaseStorageImageUrl } from "@/lib/allowed-image-hosts";
+import { getHeroDisplayMode } from "@/lib/hero-display";
 import { PlaceholderImage } from "./PlaceholderImage";
+import { GalleryLightbox } from "./GalleryLightbox";
 
 export function TruckHero({ truck }: { truck: Truck }) {
   const ratingSummary = getRatingSummary(truck);
+  const heroMode = getHeroDisplayMode(truck);
+
+  // Only a real, loadable Supabase Storage photo is worth a full-size
+  // viewer — a mock-seed/missing value renders PlaceholderImage's
+  // decorative gradient instead, and that's not "an image" to open. Also
+  // demoted the moment the real photo fails to load at runtime, so a
+  // broken URL never leaves a dead-looking button behind (same pattern as
+  // MenuItemGrid's photo thumbnails).
+  const [heroFailed, setHeroFailed] = useState(false);
+  const [logoFailed, setLogoFailed] = useState(false);
+  const heroClickable = Boolean(truck.hero_image && isSupabaseStorageImageUrl(truck.hero_image) && !heroFailed);
+  const logoClickable = Boolean(truck.logo && isSupabaseStorageImageUrl(truck.logo) && !logoFailed);
+
+  const [openViewer, setOpenViewer] = useState<"hero" | "logo" | null>(null);
+  const heroTriggerRef = useRef<HTMLButtonElement>(null);
+  const logoTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleClose = useCallback(() => {
+    setOpenViewer((current) => {
+      if (current === "hero") heroTriggerRef.current?.focus();
+      if (current === "logo") logoTriggerRef.current?.focus();
+      return null;
+    });
+  }, []);
+
+  // "cover": today's full-bleed crop — right whenever the subject already
+  // fills most of the frame, which is most trucks.
+  //
+  // "contain": for a hero whose important subjects are spread across the
+  // full frame rather than centered (see hero-display.ts) — no single crop
+  // keeps everyone in it, so this shows the complete, uncropped photo
+  // instead, centered over a blurred/darkened copy of the same image
+  // filling the rest of the band. No ken-burns zoom on either layer here:
+  // it would slowly crop the "complete image" guarantee away on the sharp
+  // copy, and the static `scale-110` the blurred copy needs (so its
+  // softened edges stay hidden past the box's own bounds) would just fight
+  // an animation driving the same `transform` property.
+  const heroImage =
+    heroMode === "contain" ? (
+      <div className="relative h-full w-full overflow-hidden bg-ink">
+        <div aria-hidden="true" className="absolute inset-0">
+          <PlaceholderImage
+            seed={truck.hero_image ?? truck.id}
+            label=""
+            className="h-full w-full scale-110 blur-2xl brightness-[0.45] saturate-75"
+            sizes="100vw"
+            fit="cover"
+            onImageError={() => setHeroFailed(true)}
+          />
+        </div>
+        <div className="absolute inset-0">
+          <PlaceholderImage
+            seed={truck.hero_image ?? truck.id}
+            label={`${truck.name} hero photo`}
+            className="h-full w-full"
+            sizes="100vw"
+            fit="contain"
+            onImageError={() => setHeroFailed(true)}
+          />
+        </div>
+      </div>
+    ) : (
+      <PlaceholderImage
+        seed={truck.hero_image ?? truck.id}
+        label={`${truck.name} hero photo`}
+        className="h-full w-full animate-ken-burns"
+        sizes="100vw"
+        fit="cover"
+        onImageError={() => setHeroFailed(true)}
+      />
+    );
+
+  const logoImage = (
+    <PlaceholderImage
+      seed={truck.logo ?? `${truck.id}-logo`}
+      label={`${truck.name} logo`}
+      className={
+        logoClickable
+          ? "h-full w-full rounded-2xl"
+          : "h-24 w-24 shrink-0 rounded-2xl border-4 border-white shadow-[var(--shadow-pop)] sm:h-28 sm:w-28 lg:h-32 lg:w-32"
+      }
+      sizes="(min-width: 1024px) 128px, (min-width: 640px) 112px, 96px"
+      onImageError={() => setLogoFailed(true)}
+    />
+  );
 
   return (
     <div className="relative">
-      {/* Mobile/sm height unchanged — only the lg height is trimmed, so
-          desktop dominance eases off without weakening the mobile hero. */}
-      <div className="relative h-60 w-full overflow-hidden sm:h-80 lg:h-96">
-        <PlaceholderImage
-          seed={truck.hero_image ?? truck.id}
-          label={`${truck.name} hero photo`}
-          className="h-full w-full animate-ken-burns"
-          sizes="100vw"
-          fit="cover-panoramic"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-black/10" />
+      {/* Mobile/sm height unchanged in both modes — only the lg height
+          grows, and only for "contain": a taller band gives the complete,
+          uncropped image more room before the blurred backdrop has to fill
+          in, without making the far-more-common "cover" profiles any
+          taller than they already were. */}
+      <div
+        className={
+          heroMode === "contain"
+            ? "relative h-60 w-full overflow-hidden sm:h-80 lg:h-[28rem]"
+            : "relative h-60 w-full overflow-hidden sm:h-80 lg:h-96"
+        }
+      >
+        {heroClickable ? (
+          <button
+            ref={heroTriggerRef}
+            type="button"
+            onClick={() => setOpenViewer("hero")}
+            aria-label={`Open full-size hero image for ${truck.name}`}
+            className="block h-full w-full focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white"
+          >
+            {heroImage}
+          </button>
+        ) : (
+          heroImage
+        )}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-black/10" />
       </div>
 
       <div className="mx-auto max-w-6xl px-4 lg:px-6">
@@ -29,12 +135,19 @@ export function TruckHero({ truck }: { truck: Truck }) {
             its height at every breakpoint) so it still reads as
             deliberate at the larger desktop size, not just bigger. */}
         <div className="relative -mt-12 sm:-mt-14 lg:-mt-16">
-          <PlaceholderImage
-            seed={truck.logo ?? `${truck.id}-logo`}
-            label={`${truck.name} logo`}
-            className="h-24 w-24 shrink-0 rounded-2xl border-4 border-white shadow-[var(--shadow-pop)] sm:h-28 sm:w-28 lg:h-32 lg:w-32"
-            sizes="(min-width: 1024px) 128px, (min-width: 640px) 112px, 96px"
-          />
+          {logoClickable ? (
+            <button
+              ref={logoTriggerRef}
+              type="button"
+              onClick={() => setOpenViewer("logo")}
+              aria-label={`Open full-size logo image for ${truck.name}`}
+              className="block h-24 w-24 shrink-0 rounded-2xl border-4 border-white shadow-[var(--shadow-pop)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand sm:h-28 sm:w-28 lg:h-32 lg:w-32"
+            >
+              {logoImage}
+            </button>
+          ) : (
+            logoImage
+          )}
         </div>
 
         <div className="mt-3.5 animate-fade-up sm:mt-4">
@@ -69,6 +182,23 @@ export function TruckHero({ truck }: { truck: Truck }) {
           </div>
         </div>
       </div>
+
+      {openViewer === "hero" && truck.hero_image && (
+        <GalleryLightbox
+          photos={[truck.hero_image]}
+          truckName={`${truck.name} hero photo`}
+          initialIndex={0}
+          onClose={handleClose}
+        />
+      )}
+      {openViewer === "logo" && truck.logo && (
+        <GalleryLightbox
+          photos={[truck.logo]}
+          truckName={`${truck.name} logo`}
+          initialIndex={0}
+          onClose={handleClose}
+        />
+      )}
     </div>
   );
 }
