@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { makeTruck } from "@/lib/test-fixtures";
 import type { UpcomingStop } from "@/lib/types";
+import * as formatModule from "@/lib/format";
 import { UpcomingStopsSection } from "./UpcomingStopsSection";
 
 // Matches the fake NEXT_PUBLIC_SUPABASE_URL set in vitest.setup.ts.
@@ -92,5 +93,35 @@ describe("UpcomingStopsSection flyer viewer", () => {
     img = screen.getByAltText("Photo 1 of Test Truck");
     expect(img.getAttribute("src")).toContain(encodeURIComponent(FLYER_B));
     expect(img.getAttribute("src")).not.toContain(encodeURIComponent(FLYER_A));
+  });
+});
+
+describe("UpcomingStopsSection stop-time hydration safety", () => {
+  // Regression test for a real production hydration bug (React error
+  // #418): this is a Client Component, so Next renders it once on the
+  // server and again in the browser during hydration. Formatting the stop
+  // time with the runtime's ambient time zone made those two renders
+  // disagree whenever the server's zone (Vercel: UTC) differed from the
+  // visitor's browser zone — confirmed live: production served "3:00 PM"
+  // but hydrated to "11:00 AM" for the same instant. The fix is
+  // useSyncExternalStore's server/client snapshot split: force UTC
+  // (deterministic, matches the server) for the actual SSR pass, then
+  // upgrade to the ambient zone once mounted on the client.
+  //
+  // useSyncExternalStore's getServerSnapshot only runs under genuine SSR
+  // (renderToString/hydrateRoot) — a plain client render() never calls
+  // it, so RTL alone can't observe the pre-mount pass. This exercises the
+  // real server API directly instead: renderToString must produce the
+  // UTC text, and RTL's (client-only) render must produce the ambient-zone
+  // text — the same two values a real hydration diffs against each other.
+  it("SSRs the stop time in UTC and client-renders it in the ambient zone (the hydration-safe split)", async () => {
+    const { renderToString } = await import("react-dom/server");
+    const truck = makeTruck({ upcomingStops: [makeStop({ starts_at: "2026-08-05T15:00:00.000Z" })] });
+
+    const ssrHtml = renderToString(<UpcomingStopsSection truck={truck} />);
+    expect(ssrHtml).toContain(formatModule.formatDateTime("2026-08-05T15:00:00.000Z", "UTC"));
+
+    render(<UpcomingStopsSection truck={truck} />);
+    expect(screen.getByText(formatModule.formatDateTime("2026-08-05T15:00:00.000Z"))).toBeInTheDocument();
   });
 });

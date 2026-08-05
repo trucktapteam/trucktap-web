@@ -1,8 +1,32 @@
 import { describe, expect, it } from "vitest";
-import { getActiveAnnouncements, getUpcomingStops } from "./format";
+import { formatDateTime, getActiveAnnouncements, getUpcomingStops } from "./format";
 import { makeTruck } from "./test-fixtures";
 
 const NOW = new Date("2026-08-02T12:00:00.000Z");
+
+describe("formatDateTime", () => {
+  // Regression test for a real production hydration bug: UpcomingStopsSection
+  // is a Client Component, so Next renders it once on the server and again
+  // in the browser during hydration. Without an explicit `timeZone`,
+  // `toLocaleString` resolves the *runtime's own* zone — the server (e.g.
+  // Vercel, UTC) and a visitor's browser (whatever zone they're in) can
+  // legitimately disagree, producing two different strings for the same
+  // instant and a guaranteed React hydration mismatch (error #418).
+  // Confirmed live: production served "3:00 PM" server-side but hydrated to
+  // "11:00 AM" in an America/New_York browser for the same stop.
+  it("with an explicit timeZone, is deterministic regardless of the caller's own zone", () => {
+    expect(formatDateTime("2026-08-05T15:00:00.000Z", "UTC")).toBe("Wed, Aug 5, 3:00 PM");
+  });
+
+  it("without a timeZone, resolves the ambient runtime zone (the deliberate post-mount behavior)", () => {
+    // No explicit assertion on the resulting hour here — the point is that
+    // this call path exists and is intentionally zone-sensitive; asserting
+    // a specific hour would just hardcode this test's own machine's zone.
+    // UpcomingStopsSection.test.tsx exercises the actual mount-driven
+    // switch between this and the UTC-forced call above.
+    expect(formatDateTime("2026-08-05T15:00:00.000Z")).toMatch(/^Wed, Aug 5, \d{1,2}:\d{2} [AP]M$/);
+  });
+});
 
 describe("getActiveAnnouncements", () => {
   it("includes an announcement with no expiry", () => {

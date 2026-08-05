@@ -26,13 +26,25 @@ export function formatRelativeTime(iso: string, now: Date = new Date()): string 
   return `on ${then.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 }
 
-export function formatDateTime(iso: string): string {
+/**
+ * `timeZone` is optional and deliberately not defaulted to the runtime's
+ * own zone: this is called from a Client Component (UpcomingStopsSection),
+ * which Next.js renders once on the server and once again in the browser
+ * during hydration. Server and browser can be in different zones (Vercel's
+ * functions run in UTC; a visitor's browser doesn't), so letting each call
+ * resolve `Intl`'s ambient zone independently produces two different
+ * strings for the same instant — a guaranteed hydration text mismatch.
+ * Callers pass an explicit zone (or omit it for a deliberate second pass —
+ * see UpcomingStopsSection's `mounted` flag) so the two renders can agree.
+ */
+export function formatDateTime(iso: string, timeZone?: string): string {
   return new Date(iso).toLocaleString("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    ...(timeZone ? { timeZone } : {}),
   });
 }
 

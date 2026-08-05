@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, useSyncExternalStore } from "react";
 import type { Truck } from "@/lib/types";
 import { formatDateTime, getUpcomingStops } from "@/lib/format";
 import { PlaceholderImage } from "./PlaceholderImage";
@@ -8,6 +8,21 @@ import { SectionHeading } from "./SectionHeading";
 import { GalleryLightbox } from "./GalleryLightbox";
 
 const PREVIEW_COUNT = 5;
+
+// Never actually changes, so there's nothing to subscribe to — this only
+// exists to give useSyncExternalStore a value that's deliberately
+// different between its server snapshot and its (one-time) client
+// snapshot: false while server-rendering / on the client's first paint,
+// true from then on. That's the "has this client finished its first
+// render" signal used below to keep the stop time hydration-safe.
+const noopSubscribe = () => () => {};
+function useMounted(): boolean {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false
+  );
+}
 
 export function UpcomingStopsSection({ truck }: { truck: Truck }) {
   const stops = getUpcomingStops(truck);
@@ -26,6 +41,17 @@ export function UpcomingStopsSection({ truck }: { truck: Truck }) {
       return null;
     });
   }, []);
+
+  // Stop date/times are formatted in the viewer's own local time zone once
+  // mounted — but that very first render happens twice for a Client
+  // Component (once on the server, once again in the browser during
+  // hydration), and the server's zone and the visitor's browser zone are
+  // often different. Rendering in a fixed, explicit zone (UTC) until after
+  // mount guarantees those two passes agree — a real fix, not a suppressed
+  // warning — then this upgrades to the visitor's own local time on the
+  // very next paint, which is what everyone actually wants to read.
+  const mounted = useMounted();
+  const timeZone = mounted ? undefined : "UTC";
 
   // No section at all when there's nothing scheduled — never an empty shell.
   if (stops.length === 0) return null;
@@ -62,10 +88,10 @@ export function UpcomingStopsSection({ truck }: { truck: Truck }) {
                 />
               </button>
             ) : (
-              <DateChip iso={stop.starts_at} />
+              <DateChip iso={stop.starts_at} timeZone={timeZone} />
             )}
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-ink">{formatDateTime(stop.starts_at)}</p>
+              <p className="text-sm font-semibold text-ink">{formatDateTime(stop.starts_at, timeZone)}</p>
               <p className="mt-0.5 flex items-center gap-1 text-sm text-muted">
                 <PinIcon />
                 {stop.location_text}
@@ -114,10 +140,17 @@ export function UpcomingStopsSection({ truck }: { truck: Truck }) {
 /** Consistent left-anchor for stops without a flyer, so every row in the
  * list lines up the same way instead of alternating between a photo and
  * bare text — decorative/redundant with the date text next to it, so it's
- * hidden from assistive tech rather than announced twice. */
-function DateChip({ iso }: { iso: string }) {
+ * hidden from assistive tech rather than announced twice.
+ *
+ * `timeZone` follows the same fixed-until-mounted pattern as the date/time
+ * text next to it (see the `mounted` comment above): `date.getDate()`
+ * reads the runtime's own ambient zone same as `toLocaleDateString` does,
+ * so it needs the same explicit-UTC-until-mounted treatment to avoid a
+ * hydration mismatch on the day-of-month digit. */
+function DateChip({ iso, timeZone }: { iso: string; timeZone?: string }) {
   const date = new Date(iso);
-  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const month = date.toLocaleDateString("en-US", { month: "short", ...(timeZone ? { timeZone } : {}) });
+  const day = timeZone === "UTC" ? date.getUTCDate() : date.getDate();
 
   return (
     <div
@@ -125,7 +158,7 @@ function DateChip({ iso }: { iso: string }) {
       className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl bg-surface"
     >
       <span className="text-[10px] font-bold tracking-wide text-brand-dark uppercase">{month}</span>
-      <span className="text-xl leading-none font-black text-ink">{date.getDate()}</span>
+      <span className="text-xl leading-none font-black text-ink">{day}</span>
     </div>
   );
 }
