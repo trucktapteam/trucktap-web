@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { Truck } from "@/lib/types";
 import { useBodyScrollLock, useDialogKeyTrap } from "./useDialogA11y";
 import { CloseIcon } from "./GalleryLightbox";
@@ -14,6 +15,12 @@ import { PosterArtwork } from "./TruckQrPoster";
  * focus-trap/Escape/scroll-lock behavior via useDialogA11y so it matches
  * the gallery/menu-item lightbox exactly, just without prev/next (there's
  * only ever one poster).
+ *
+ * Portaled to document.body for the same reason as GalleryLightbox: the
+ * sidebar trigger lives inside a `<Reveal>` wrapper, whose translate-y-*
+ * utility sets the CSS `translate` property and becomes a containing
+ * block for `position: fixed` descendants, trapping an in-place dialog
+ * inside the sidebar's own box instead of the viewport.
  */
 export function PosterPreviewModal({
   truck,
@@ -34,7 +41,7 @@ export function PosterPreviewModal({
   useBodyScrollLock();
   useDialogKeyTrap({ dialogRef, onClose });
 
-  return (
+  return createPortal(
     <div
       ref={dialogRef}
       role="dialog"
@@ -58,6 +65,7 @@ export function PosterPreviewModal({
       <div className="w-full max-w-sm">
         <PosterArtwork truck={truck} qrValue={qrValue} qrSize={200} />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

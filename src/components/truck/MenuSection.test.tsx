@@ -61,6 +61,19 @@ describe("MenuSection board + structured items", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  // Regression test: same page-flow-trapping bug as GallerySection (see
+  // its test for the full explanation) — a <Reveal> ancestor's
+  // translate-y-* utility creates a containing block for `position:
+  // fixed`. Portaling to document.body fixes it for every lightbox
+  // instance, board photos included.
+  it("renders the board-photo lightbox as a direct child of document.body (portal)", () => {
+    const truck = makeTruck({ menu_images: ["board-1"] });
+    render(<MenuSection truck={truck} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open menu board 1 of 1" }));
+
+    expect(screen.getByRole("dialog").parentElement).toBe(document.body);
+  });
+
   it("returns focus to the originating board thumbnail on close", () => {
     const truck = makeTruck({ menu_images: ["board-1"] });
     render(<MenuSection truck={truck} />);

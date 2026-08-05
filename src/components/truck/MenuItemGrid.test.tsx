@@ -54,6 +54,17 @@ describe("MenuItemGrid photos", () => {
     expect(dialog).toHaveAttribute("aria-label", expect.stringContaining("Photo 1 of 1"));
   });
 
+  // Regression test: same page-flow-trapping bug as GallerySection (see
+  // its test for the full explanation) — a <Reveal> ancestor's
+  // translate-y-* utility creates a containing block for `position:
+  // fixed`. Portaling to document.body fixes it here too.
+  it("renders the item-photo lightbox as a direct child of document.body (portal)", () => {
+    render(<MenuItemGrid items={[makeItem({ image: REAL_IMAGE })]} truckName="Smoky Wheels BBQ" />);
+    fireEvent.click(screen.getByRole("button", { name: "View photo of Brisket Plate" }));
+
+    expect(screen.getByRole("dialog").parentElement).toBe(document.body);
+  });
+
   // Regression coverage for a release-blocking freeze investigation: the
   // modal's keydown listener and body scroll-lock must stay perfectly
   // balanced no matter how many times it's opened and closed.

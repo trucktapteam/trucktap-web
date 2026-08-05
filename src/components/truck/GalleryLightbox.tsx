@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { PlaceholderImage } from "./PlaceholderImage";
 import { useBodyScrollLock, useDialogKeyTrap } from "./useDialogA11y";
 
@@ -8,6 +9,16 @@ import { useBodyScrollLock, useDialogKeyTrap } from "./useDialogA11y";
  * Full-size photo viewer. Reuses PlaceholderImage (not a raw next/image)
  * so a broken/unrenderable photo degrades to the same gradient fallback
  * used everywhere else instead of leaving a broken image in the modal.
+ *
+ * Rendered through a portal to document.body rather than in place: every
+ * trigger for this lives inside a `<Reveal>` mount-animation wrapper, and
+ * Reveal's `translate-y-*` utility sets the standalone CSS `translate`
+ * property — which, like `transform`, establishes a new containing block
+ * for `position: fixed` descendants (CSS Transforms Level 2). Left
+ * in-place, this dialog's "fixed inset-0" resolves against that Reveal
+ * div's own content box instead of the viewport, trapping it inside the
+ * page's grid/flow. A portal sidesteps the ancestor chain entirely, so it
+ * stays correct regardless of what a future wrapper does.
  */
 export function GalleryLightbox({
   photos,
@@ -41,7 +52,7 @@ export function GalleryLightbox({
     onArrowRight: hasMultiple ? goNext : undefined,
   });
 
-  return (
+  return createPortal(
     <div
       ref={dialogRef}
       role="dialog"
@@ -99,7 +110,8 @@ export function GalleryLightbox({
           </button>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

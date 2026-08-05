@@ -37,6 +37,18 @@ describe("UpcomingStopsSection flyer viewer", () => {
     expect(screen.queryByRole("button", { name: "Next photo" })).not.toBeInTheDocument();
   });
 
+  // Regression test: same page-flow-trapping bug as GallerySection (see
+  // its test for the full explanation) — a <Reveal> ancestor's
+  // translate-y-* utility creates a containing block for `position:
+  // fixed`. Portaling to document.body fixes it for flyers too.
+  it("renders the flyer lightbox as a direct child of document.body (portal)", () => {
+    const truck = makeTruck({ upcomingStops: [makeStop({ flyer_image: FLYER_A })] });
+    render(<UpcomingStopsSection truck={truck} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open event flyer for Farmers Market" }));
+
+    expect(screen.getByRole("dialog").parentElement).toBe(document.body);
+  });
+
   it("closes with Escape and returns focus to the flyer thumbnail", () => {
     const truck = makeTruck({ upcomingStops: [makeStop({ flyer_image: FLYER_A })] });
     render(<UpcomingStopsSection truck={truck} />);

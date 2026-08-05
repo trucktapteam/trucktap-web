@@ -23,6 +23,25 @@ describe("GallerySection lightbox", () => {
     expect(dialog).toHaveAttribute("aria-label", expect.stringContaining("Photo 1 of 3"));
   });
 
+  // Regression test: the lightbox used to render in place, nested inside
+  // GallerySection's own <section> — which sits inside a <Reveal> mount
+  // wrapper whose translate-y-* utility sets the CSS `translate` property.
+  // A non-none `translate`/`transform`/`scale`/`rotate` on an ancestor
+  // creates a new containing block for `position: fixed` descendants (CSS
+  // Transforms Level 2), so the "fixed inset-0" dialog resolved against
+  // that wrapper's box instead of the viewport, trapping it in the page's
+  // grid/flow. Rendering through a portal to document.body sidesteps any
+  // such ancestor entirely. jsdom doesn't compute real layout/containing
+  // blocks, so this only asserts the DOM structure the portal produces —
+  // the actual full-viewport coverage was verified in a real browser.
+  it("renders the lightbox as a direct child of document.body (portal), not nested under the section", () => {
+    renderGallery(1);
+    fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 1" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.parentElement).toBe(document.body);
+  });
+
   it("closes with Escape", () => {
     renderGallery(3);
     fireEvent.click(screen.getByRole("button", { name: "Open photo 1 of 3" }));
