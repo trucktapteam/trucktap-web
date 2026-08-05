@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDateTime, getActiveAnnouncements, getUpcomingStops } from "./format";
+import { formatDateTime, getActiveAnnouncements, getUpcomingStops, isAnnouncementActive } from "./format";
 import { makeTruck } from "./test-fixtures";
 
 const NOW = new Date("2026-08-02T12:00:00.000Z");
@@ -28,14 +28,71 @@ describe("formatDateTime", () => {
   });
 });
 
-describe("getActiveAnnouncements", () => {
-  it("includes an announcement with no expiry", () => {
-    const truck = makeTruck({
-      announcements: [{ id: "a1", message: "no expiry", timestamp: NOW.toISOString() }],
-    });
-    expect(getActiveAnnouncements(truck, NOW)).toHaveLength(1);
+// This policy must match the Expo app's own getAnnouncementExpiresAt /
+// isAnnouncementActive (contexts/AppContext.tsx) exactly — the site and
+// the app rendering different things for the same truck is the bug, not
+// a style choice. Confirmed in production: Güero's Salsa and More has a
+// grand-opening announcement from 2026-05-30 with no `expires_at` at all
+// (created before that field existed) — the old web logic treated a
+// missing `expires_at` as "never expires" and showed it indefinitely; the
+// real app policy has always fallen back to 7 days after `timestamp`,
+// which is long past for that post.
+describe("isAnnouncementActive", () => {
+  it("is active with time to spare before an explicit expires_at", () => {
+    const announcement = { timestamp: NOW.toISOString(), expires_at: "2026-08-02T18:00:00.000Z" };
+    expect(isAnnouncementActive(announcement, NOW)).toBe(true);
   });
 
+  it("is inactive once an explicit expires_at has passed", () => {
+    const announcement = { timestamp: NOW.toISOString(), expires_at: "2026-08-01T00:00:00.000Z" };
+    expect(isAnnouncementActive(announcement, NOW)).toBe(false);
+  });
+
+  it("is inactive at the exact expires_at instant (the boundary is exclusive)", () => {
+    const expiresAt = "2026-08-02T18:00:00.000Z";
+    expect(isAnnouncementActive({ timestamp: NOW.toISOString(), expires_at: expiresAt }, new Date(expiresAt))).toBe(
+      false
+    );
+  });
+
+  it("is active one millisecond before the exact expires_at instant", () => {
+    const expiresAt = new Date("2026-08-02T18:00:00.000Z");
+    const oneMsBefore = new Date(expiresAt.getTime() - 1);
+    expect(isAnnouncementActive({ timestamp: NOW.toISOString(), expires_at: expiresAt.toISOString() }, oneMsBefore)).toBe(
+      true
+    );
+  });
+
+  it("falls back to 7 days after timestamp when expires_at is missing — a recent post is still active", () => {
+    const announcement = { timestamp: NOW.toISOString() };
+    const threeDaysLater = new Date(NOW.getTime() + 3 * 24 * 60 * 60 * 1000);
+    expect(isAnnouncementActive(announcement, threeDaysLater)).toBe(true);
+  });
+
+  it("falls back to 7 days after timestamp when expires_at is missing — an old post (the Güero's case) is expired", () => {
+    const announcement = { timestamp: "2026-05-30T20:02:26.891Z" }; // real production timestamp, no expires_at
+    const productionNow = new Date("2026-08-05T04:32:17.951Z"); // real production "now" at investigation time
+    expect(isAnnouncementActive(announcement, productionNow)).toBe(false);
+  });
+
+  it("falls back to 7 days after timestamp when expires_at fails to parse", () => {
+    const announcement = { timestamp: NOW.toISOString(), expires_at: "not a real date" };
+    const threeDaysLater = new Date(NOW.getTime() + 3 * 24 * 60 * 60 * 1000);
+    const eightDaysLater = new Date(NOW.getTime() + 8 * 24 * 60 * 60 * 1000);
+    expect(isAnnouncementActive(announcement, threeDaysLater)).toBe(true);
+    expect(isAnnouncementActive(announcement, eightDaysLater)).toBe(false);
+  });
+
+  // Safest behavior for data too broken to date at all: never eternally
+  // active. A missing/unparseable `timestamp` (with no expires_at either)
+  // resolves to the Unix epoch — already in the past for any real `now`.
+  it("treats a missing or malformed timestamp (with no expires_at) as already expired, never as eternally active", () => {
+    expect(isAnnouncementActive({ timestamp: "" }, NOW)).toBe(false);
+    expect(isAnnouncementActive({ timestamp: "not a real date" }, NOW)).toBe(false);
+  });
+});
+
+describe("getActiveAnnouncements", () => {
   it("includes an announcement that expires in the future", () => {
     const truck = makeTruck({
       announcements: [
@@ -62,6 +119,17 @@ describe("getActiveAnnouncements", () => {
       ],
     });
     expect(getActiveAnnouncements(truck, NOW)).toEqual([]);
+  });
+
+  // Regression test for the real Güero's Salsa and More bug: no
+  // `expires_at` must not mean "shows forever."
+  it("excludes an old announcement with no expires_at once its 7-day fallback window has passed", () => {
+    const truck = makeTruck({
+      announcements: [
+        { id: "a1", message: "grand opening soon!", timestamp: "2026-05-30T20:02:26.891Z" },
+      ],
+    });
+    expect(getActiveAnnouncements(truck, new Date("2026-08-05T04:32:17.951Z"))).toEqual([]);
   });
 
   it("returns an empty array when there are no announcements", () => {

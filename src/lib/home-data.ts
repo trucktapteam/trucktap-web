@@ -5,9 +5,8 @@
  * `fallbackRollingTrucks` below is only the outage backup for that query.
  */
 
-export const APP_STORE_URL = "https://apps.apple.com/us/app/trucktap/id6762240100";
-export const GOOGLE_PLAY_URL =
-  "https://play.google.com/store/apps/details?id=app.rork.trucktap_food_truck_finder_cqgko70&hl=en_US";
+// App Store / Google Play URLs live in lib/app-links.ts — the single
+// canonical source every download button on the site imports from.
 export const FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61574337256977";
 export const ANTHEM_YOUTUBE_WATCH_URL = "https://youtube.com/shorts/rpr4vHIFAHY?feature=share";
 export const ANTHEM_YOUTUBE_EMBED_URL = "https://www.youtube.com/embed/rpr4vHIFAHY";

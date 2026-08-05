@@ -150,10 +150,44 @@ describe("AnnouncementBanner", () => {
 
   it("renders an active announcement", () => {
     const truck = makeTruck({
-      announcements: [{ id: "a1", message: "Running low on brisket today", timestamp: NOW.toISOString() }],
+      announcements: [
+        {
+          id: "a1",
+          message: "Running low on brisket today",
+          timestamp: NOW.toISOString(),
+          // Explicit and clearly future-dated (rather than relying on the
+          // 7-day-from-timestamp fallback plus the real wall clock still
+          // being within that window) — this component reads `Date.now()`
+          // internally with no way to inject `now` in a test, so pinning
+          // expires_at keeps this test from going stale on its own.
+          expires_at: "2099-01-01T00:00:00.000Z",
+        },
+      ],
     });
     render(<AnnouncementBanner truck={truck} />);
     expect(screen.getByText("Running low on brisket today")).toBeInTheDocument();
+  });
+
+  // Regression test for the real Güero's Salsa and More bug: a legacy
+  // announcement with no expires_at must not render forever — it falls
+  // back to 7 days after `timestamp`, same as the Expo app.
+  it("renders nothing when the only announcement has no expires_at and its 7-day fallback window has long passed", () => {
+    const truck = makeTruck({
+      announcements: [{ id: "a1", message: "grand opening soon!", timestamp: "2020-01-01T00:00:00.000Z" }],
+    });
+    const { container } = render(<AnnouncementBanner truck={truck} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  // mapAnnouncements (truck-data.ts) already drops empty-message entries
+  // before they ever reach this component — this just confirms the
+  // banner itself never renders a message-less item, as a second layer.
+  it("never renders an announcement with no message text", () => {
+    const truck = makeTruck({
+      announcements: [{ id: "a1", message: "", timestamp: "2099-01-01T00:00:00.000Z" }],
+    });
+    const { container } = render(<AnnouncementBanner truck={truck} />);
+    expect(container).toBeEmptyDOMElement();
   });
 });
 

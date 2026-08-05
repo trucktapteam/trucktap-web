@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { APP_STORE_URL, GOOGLE_PLAY_URL, FACEBOOK_URL, screenshots } from "@/lib/home-data";
+import { FACEBOOK_URL, screenshots } from "@/lib/home-data";
+import { APP_STORE_URL, GOOGLE_PLAY_URL } from "@/lib/app-links";
 import { heroPanelGradient, panelGridOverlay } from "@/lib/home-gradients";
 
 export function HeroSection() {

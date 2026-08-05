@@ -1,4 +1,4 @@
-import type { Truck } from "./types";
+import type { Announcement, Truck } from "./types";
 
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -85,10 +85,59 @@ export function getTodayHours(truck: Truck, now: Date = new Date()) {
   return truck.operating_hours[weekday] ?? null;
 }
 
+// Mirrors the Expo app's own ANNOUNCEMENT_EXPIRATION_MS
+// (contexts/AppContext.tsx) exactly — this is the same 7-day window
+// owners are told about when they post ("Announcements stay visible for
+// 7 days"), not a separate web-only number.
+const ANNOUNCEMENT_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Reproduces the Expo app's getAnnouncementExpiresAt exactly (same file),
+ * so the site and the app agree on what's currently visible instead of
+ * running a separate policy:
+ *  1. A present, parseable `expires_at` wins outright — this is what
+ *     addAnnouncement actually writes (`timestamp + 7 days`) for every
+ *     announcement created since that field existed.
+ *  2. Missing `expires_at` (announcements created before that field was
+ *     added — confirmed in production data, e.g. Güero's Salsa's stale
+ *     grand-opening post) falls back to 7 days after `timestamp`, exactly
+ *     like the app does. It is NOT treated as "never expires."
+ *  3. If `timestamp` doesn't parse either, this returns a timestamp of 0
+ *     (the Unix epoch) — always in the past, so malformed data can never
+ *     keep stale promotional copy visible forever.
+ */
+function getAnnouncementExpiresAt(announcement: Pick<Announcement, "timestamp" | "expires_at">): number {
+  const explicitExpiration = announcement.expires_at ? Date.parse(announcement.expires_at) : NaN;
+  if (Number.isFinite(explicitExpiration)) {
+    return explicitExpiration;
+  }
+
+  const createdAt = Date.parse(announcement.timestamp);
+  if (!Number.isFinite(createdAt)) {
+    return 0;
+  }
+
+  return createdAt + ANNOUNCEMENT_EXPIRATION_MS;
+}
+
+export function isAnnouncementActive(
+  announcement: Pick<Announcement, "timestamp" | "expires_at">,
+  now: Date = new Date()
+): boolean {
+  return getAnnouncementExpiresAt(announcement) > now.getTime();
+}
+
+/**
+ * The full "is this announcement something the public profile should show
+ * right now" gate: `mapAnnouncements` (truck-data.ts) already drops
+ * empty-message rows during mapping, but that's a step this function
+ * doesn't control and shouldn't have to trust blindly — checking again
+ * here means "no announcement text → render nothing" holds regardless of
+ * what upstream did, the same way `getUpcomingStops` doesn't trust its
+ * caller to have already excluded cancelled stops.
+ */
 export function getActiveAnnouncements(truck: Truck, now: Date = new Date()) {
-  return truck.announcements.filter(
-    (a) => !a.expires_at || new Date(a.expires_at).getTime() > now.getTime()
-  );
+  return truck.announcements.filter((a) => a.message.trim() !== "" && isAnnouncementActive(a, now));
 }
 
 /** Cancelled/completed stops, and anything that has already ended, never show. */

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { APP_STORE_URL, GOOGLE_PLAY_URL } from "@/lib/home-data";
+import { APP_STORE_URL, GOOGLE_PLAY_URL } from "@/lib/app-links";
 import { panelGridOverlay } from "@/lib/home-gradients";
 
 export function FinalCtaSection() {

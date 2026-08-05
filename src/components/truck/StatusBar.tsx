@@ -10,13 +10,20 @@ type PrimaryAction = { label: string; href: string; external: boolean; variant: 
  * with the same urgent wording would wrongly imply the truck is currently
  * serving from it, so that case gets softer wording and a quieter button
  * instead. Falls back to the next most useful thing we actually have.
+ *
+ * `truck.currentLocation` (the `locations` table) is not a stable "usual
+ * spot" — production data shows it gets upserted to wherever the truck
+ * last went LIVE, and can be a different city than `service_area` for the
+ * same truck (e.g. El Taco Rico: service_area "Morton, IL" vs. this row
+ * "Tremont, IL"). "View last known location" is what the data actually
+ * supports; "usual location" implied a claim it can't back up.
  */
 function getPrimaryAction(truck: Truck, isLive: boolean): PrimaryAction | null {
   if (truck.currentLocation) {
     const href = `https://www.google.com/maps/search/?api=1&query=${truck.currentLocation.latitude},${truck.currentLocation.longitude}`;
     return isLive
       ? { label: "Get Directions", href, external: true, variant: "primary" }
-      : { label: "View usual location", href, external: true, variant: "secondary" };
+      : { label: "View last known location", href, external: true, variant: "secondary" };
   }
   if (truck.phone) {
     return { label: `Call ${truck.name}`, href: `tel:${truck.phone}`, external: false, variant: "primary" };
@@ -73,8 +80,8 @@ export function StatusBar({ truck }: { truck: Truck }) {
           {status.lastSeenLabel
             ? status.lastSeenLabel
             : hasUpcomingStops
-              ? "This truck hasn't shared a live status yet — check their upcoming stops below."
-              : "This truck hasn't shared a live status yet."}
+              ? "LIVE status not recently updated — check their upcoming stops below."
+              : "LIVE status not recently updated."}
         </p>
       )}
 
@@ -85,8 +92,14 @@ export function StatusBar({ truck }: { truck: Truck }) {
           )}
           {status.kind !== "live" && (
             <>
+              {/* `service_area` is genuinely owner-entered for public display
+                  (per its own column comment), but owners often fill it in
+                  as a specific street address rather than a described
+                  region — "Based near" reads naturally either way, where
+                  "Usually serving" implies a coverage area this field
+                  doesn't always describe. */}
               {truck.service_area && (
-                <p className="text-sm font-medium text-ink">Usually serving: {truck.service_area}</p>
+                <p className="text-sm font-medium text-ink">Based near: {truck.service_area}</p>
               )}
               {todayHours && (
                 <p className={truck.service_area ? "mt-1 text-sm text-muted" : "text-sm text-muted"}>
