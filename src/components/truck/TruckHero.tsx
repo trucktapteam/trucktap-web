@@ -4,13 +4,11 @@ import { useCallback, useRef, useState } from "react";
 import type { Truck } from "@/lib/types";
 import { getRatingSummary } from "@/lib/format";
 import { isSupabaseStorageImageUrl } from "@/lib/allowed-image-hosts";
-import { getHeroDisplayMode } from "@/lib/hero-display";
 import { PlaceholderImage } from "./PlaceholderImage";
 import { GalleryLightbox } from "./GalleryLightbox";
 
 export function TruckHero({ truck }: { truck: Truck }) {
   const ratingSummary = getRatingSummary(truck);
-  const heroMode = getHeroDisplayMode(truck);
 
   // Only a real, loadable Supabase Storage photo is worth a full-size
   // viewer — a mock-seed/missing value renders PlaceholderImage's
@@ -35,52 +33,40 @@ export function TruckHero({ truck }: { truck: Truck }) {
     });
   }, []);
 
-  // "cover": today's full-bleed crop — right whenever the subject already
-  // fills most of the frame, which is most trucks.
-  //
-  // "contain": for a hero whose important subjects are spread across the
-  // full frame rather than centered (see hero-display.ts) — no single crop
-  // keeps everyone in it, so this shows the complete, uncropped photo
-  // instead, centered over a blurred/darkened copy of the same image
-  // filling the rest of the band. No ken-burns zoom on either layer here:
-  // it would slowly crop the "complete image" guarantee away on the sharp
-  // copy, and the static `scale-110` the blurred copy needs (so its
-  // softened edges stay hidden past the box's own bounds) would just fight
-  // an animation driving the same `transform` property.
-  const heroImage =
-    heroMode === "contain" ? (
-      <div className="relative h-full w-full overflow-hidden bg-ink">
-        <div aria-hidden="true" className="absolute inset-0">
-          <PlaceholderImage
-            seed={truck.hero_image ?? truck.id}
-            label=""
-            className="h-full w-full scale-110 blur-2xl brightness-[0.45] saturate-75"
-            sizes="100vw"
-            fit="cover"
-            onImageError={() => setHeroFailed(true)}
-          />
-        </div>
-        <div className="absolute inset-0">
-          <PlaceholderImage
-            seed={truck.hero_image ?? truck.id}
-            label={`${truck.name} hero photo`}
-            className="h-full w-full"
-            sizes="100vw"
-            fit="contain"
-            onImageError={() => setHeroFailed(true)}
-          />
-        </div>
+  // Every hero shows the complete, uncropped photo — no owner-uploaded
+  // image is ever destructively cropped, regardless of where its subjects
+  // sit in the frame or how the container's aspect ratio compares to the
+  // photo's own. A blurred, darkened, slightly enlarged copy of the same
+  // image fills the rest of the band behind it, so there's never dead
+  // letterbox space. No ken-burns zoom on either layer: it would slowly
+  // crop the "complete image" guarantee away on the sharp copy, and the
+  // static `scale-110` the blurred copy needs (so its softened edges stay
+  // hidden past the box's own bounds) would just fight an animation
+  // driving the same `transform` property.
+  const heroImage = (
+    <div className="relative h-full w-full overflow-hidden bg-ink">
+      <div aria-hidden="true" className="absolute inset-0">
+        <PlaceholderImage
+          seed={truck.hero_image ?? truck.id}
+          label=""
+          className="h-full w-full scale-110 blur-2xl brightness-[0.45] saturate-75"
+          sizes="100vw"
+          fit="cover"
+          onImageError={() => setHeroFailed(true)}
+        />
       </div>
-    ) : (
-      <PlaceholderImage
-        seed={truck.hero_image ?? truck.id}
-        label={`${truck.name} hero photo`}
-        className="h-full w-full animate-ken-burns"
-        sizes="100vw"
-        fit="cover"
-        onImageError={() => setHeroFailed(true)}
-      />
-    );
+      <div className="absolute inset-0">
+        <PlaceholderImage
+          seed={truck.hero_image ?? truck.id}
+          label={`${truck.name} hero photo`}
+          className="h-full w-full"
+          sizes="100vw"
+          fit="contain"
+          onImageError={() => setHeroFailed(true)}
+        />
+      </div>
+    </div>
+  );
 
   const logoImage = (
     <PlaceholderImage
@@ -98,18 +84,11 @@ export function TruckHero({ truck }: { truck: Truck }) {
 
   return (
     <div className="relative">
-      {/* Mobile/sm height unchanged in both modes — only the lg height
-          grows, and only for "contain": a taller band gives the complete,
-          uncropped image more room before the blurred backdrop has to fill
-          in, without making the far-more-common "cover" profiles any
-          taller than they already were. */}
-      <div
-        className={
-          heroMode === "contain"
-            ? "relative h-60 w-full overflow-hidden sm:h-80 lg:h-[28rem]"
-            : "relative h-60 w-full overflow-hidden sm:h-80 lg:h-96"
-        }
-      >
+      {/* One consistent height for every truck — tall enough to give the
+          complete, uncropped image room to breathe before the blurred
+          backdrop fills in the rest, without reading as excessively tall
+          on an ordinary photo. */}
+      <div className="relative h-60 w-full overflow-hidden sm:h-80 lg:h-[28rem]">
         {heroClickable ? (
           <button
             ref={heroTriggerRef}

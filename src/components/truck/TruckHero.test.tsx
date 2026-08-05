@@ -127,55 +127,68 @@ describe("TruckHero clickable logo image", () => {
   });
 });
 
-describe("TruckHero display mode", () => {
-  it("uses plain full-bleed cover for a truck with no override (the default)", () => {
-    const truck = makeTruck({ slug: "sonny-boys-backyard", hero_image: HERO_URL });
-    render(<TruckHero truck={truck} />);
-
-    const img = screen.getByAltText(`${truck.name} hero photo`) as HTMLImageElement;
-    expect(img.className).toContain("object-cover");
-    // Only one hero <img> — no separate blurred-backdrop layer.
-    expect(document.querySelectorAll("img")).toHaveLength(1);
-  });
-
-  // Regression test: TestTruck 7/25's hero is an ordinary ~1.78:1 photo —
-  // aspect ratio alone can't distinguish it from Sonny Boys' similarly
-  // shaped photo that looks right under "cover". Its important subjects
-  // (two people) are spread across the full frame instead of centered, so
-  // any crop cuts someone off — this is a per-truck editorial override
-  // (hero-display.ts), not automatic detection.
-  it("shows the complete, uncropped image over a blurred backdrop for the overridden TestTruck 7/25 profile", () => {
-    const truck = makeTruck({ slug: "testtruck-7-25", name: "TestTruck 7/25", hero_image: HERO_URL });
+// Regression coverage for the final product decision: every truck's hero
+// uses the same complete-image treatment now — there is no more per-truck
+// mode selection (the old hero-display.ts slug map is gone). This must
+// hold regardless of slug, so these tests deliberately don't special-case
+// any particular truck.
+describe("TruckHero universal complete-image treatment", () => {
+  it.each([
+    ["sonny-boys-backyard", "Sonny Boys Backyard"],
+    ["testtruck-7-25", "TestTruck 7/25"],
+    ["cupcake-caboose", "Cupcake Caboose"],
+  ])("shows the complete, uncropped image over a blurred backdrop for %s", (slug, name) => {
+    const truck = makeTruck({ slug, name, hero_image: HERO_URL });
     render(<TruckHero truck={truck} />);
 
     // The real, accessible hero image is shown in full — object-contain,
     // nothing cropped away.
-    const sharp = screen.getByAltText("TestTruck 7/25 hero photo") as HTMLImageElement;
+    const sharp = screen.getByAltText(`${name} hero photo`) as HTMLImageElement;
     expect(sharp.className).toContain("object-contain");
 
     // A second, purely decorative copy fills the rest of the band —
-    // blurred/darkened, hidden from assistive tech, and not the thing a
-    // screen reader announces as "the hero photo".
+    // blurred/darkened, enlarged, hidden from assistive tech, and not the
+    // thing a screen reader announces as "the hero photo".
     const images = document.querySelectorAll("img");
     expect(images).toHaveLength(2);
     const backdrop = Array.from(images).find((el) => el !== sharp) as HTMLImageElement;
     expect(backdrop.alt).toBe("");
     expect(backdrop.closest('[aria-hidden="true"]')).not.toBeNull();
-    // The blur/darken treatment lands on PlaceholderImage's own wrapping
-    // div (a CSS filter there affects everything painted inside it,
-    // including the <img>), not on the <img> element's own class list.
+    // The blur/darken/scale treatment lands on PlaceholderImage's own
+    // wrapping div (a CSS filter there affects everything painted inside
+    // it, including the <img>), not on the <img> element's own class list.
     expect(backdrop.parentElement?.className).toContain("blur-2xl");
+    expect(backdrop.parentElement?.className).toContain("scale-110");
     expect(backdrop.className).toContain("object-cover");
   });
 
-  it("still opens the same full-size lightbox image when in contain mode", () => {
-    const truck = makeTruck({ slug: "testtruck-7-25", name: "TestTruck 7/25", hero_image: HERO_URL });
+  it("still opens the same full-size lightbox image (the sharp, uncropped copy)", () => {
+    const truck = makeTruck({ slug: "el-taco-rico", name: "El Taco Rico", hero_image: HERO_URL });
     render(<TruckHero truck={truck} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Open full-size hero image for TestTruck 7/25" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open full-size hero image for El Taco Rico" }));
 
     const dialog = screen.getByRole("dialog");
     const img = dialog.querySelector("img");
     expect(img?.getAttribute("src")).toContain(encodeURIComponent(HERO_URL));
+  });
+
+  it("uses one consistent responsive height class regardless of truck", () => {
+    const a = makeTruck({ slug: "sonny-boys-backyard", hero_image: HERO_URL });
+    const b = makeTruck({ slug: "testtruck-7-25", hero_image: HERO_URL });
+
+    const { container: containerA } = render(<TruckHero truck={a} />);
+    const { container: containerB } = render(<TruckHero truck={b} />);
+
+    // Identify the height-bearing band by its other, unique markers (h-60
+    // + overflow-hidden together only ever appear on that one div) rather
+    // than DOM position, which a wrapper div would make ambiguous.
+    const heightClassOf = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll("div"))
+        .find((el) => el.className.includes("h-60") && el.className.includes("overflow-hidden"))
+        ?.className;
+
+    expect(heightClassOf(containerA)).toBe(heightClassOf(containerB));
+    expect(heightClassOf(containerA)).toContain("lg:h-[28rem]");
   });
 });
