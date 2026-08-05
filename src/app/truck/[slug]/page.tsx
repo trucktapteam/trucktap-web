@@ -16,6 +16,15 @@ import { TruckQrPoster } from "@/components/truck/TruckQrPoster";
 import { TrustFooter } from "@/components/truck/TrustFooter";
 import { StructuredData } from "@/components/truck/StructuredData";
 import { Reveal } from "@/components/truck/Reveal";
+import {
+  toTruckHeroInfo,
+  toQuickActionsInfo,
+  toUpcomingStopsInfo,
+  toGallerySectionInfo,
+  toMenuSectionInfo,
+  toTruckQrPosterInfo,
+  toStatusBarTruck,
+} from "@/lib/truck-view-models";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -45,10 +54,28 @@ export default async function TruckProfilePage({ params }: Props) {
 
   const pageUrl = `https://trucktap-web.vercel.app/truck/${truck.slug}`;
 
+  // Every Client Component below gets one of these explicitly narrowed
+  // objects, never `truck` itself: Next.js serializes a Client Component's
+  // entire prop value into the page's RSC hydration payload (embedded in
+  // the raw HTML) regardless of which fields it actually reads. Building a
+  // real, separate object here — not just a narrower TypeScript type on
+  // the component — is what actually keeps `truck.currentLocation` (exact
+  // last-known-LIVE coordinates) and the raw `truck.service_area` (often a
+  // street address) out of every response but StatusBar's, which is the
+  // only component that renders location data and stays Server-rendered.
+  // See src/lib/truck-view-models.ts.
+  const truckHeroInfo = toTruckHeroInfo(truck);
+  const quickActionsInfo = toQuickActionsInfo(truck);
+  const upcomingStopsInfo = toUpcomingStopsInfo(truck);
+  const gallerySectionInfo = toGallerySectionInfo(truck);
+  const menuSectionInfo = toMenuSectionInfo(truck);
+  const truckQrPosterInfo = toTruckQrPosterInfo(truck);
+  const statusBarTruck = toStatusBarTruck(truck);
+
   return (
     <main className="flex-1 pb-20">
       <StructuredData truck={truck} url={pageUrl} />
-      <TruckHero truck={truck} />
+      <TruckHero truck={truckHeroInfo} />
 
       <div className="mx-auto max-w-6xl px-4 pt-10 lg:px-6">
         <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start lg:gap-14">
@@ -58,10 +85,10 @@ export default async function TruckProfilePage({ params }: Props) {
               components, no duplicated markup. */}
           <aside className="flex flex-col gap-5 lg:sticky lg:top-6 lg:col-start-2">
             <Reveal delayMs={0}>
-              <StatusBar truck={truck} />
+              <StatusBar truck={statusBarTruck} />
             </Reveal>
             <Reveal delayMs={80}>
-              <QuickActions truck={truck} />
+              <QuickActions truck={quickActionsInfo} />
             </Reveal>
             <Reveal delayMs={120}>
               <ConnectLinks truck={truck} />
@@ -74,7 +101,7 @@ export default async function TruckProfilePage({ params }: Props) {
               <AppDownloadCta compact />
             </Reveal>
             <Reveal delayMs={220}>
-              <TruckQrPoster truck={truck} variant="sidebar" />
+              <TruckQrPoster truck={truckQrPosterInfo} variant="sidebar" />
             </Reveal>
           </aside>
 
@@ -87,13 +114,13 @@ export default async function TruckProfilePage({ params }: Props) {
               <AboutSection truck={truck} />
             </Reveal>
             <Reveal>
-              <UpcomingStopsSection truck={truck} />
+              <UpcomingStopsSection truck={upcomingStopsInfo} />
             </Reveal>
             <Reveal>
-              <GallerySection truck={truck} />
+              <GallerySection truck={gallerySectionInfo} />
             </Reveal>
             <Reveal>
-              <MenuSection truck={truck} />
+              <MenuSection truck={menuSectionInfo} />
             </Reveal>
             <Reveal>
               <ReviewsSection truck={truck} />
@@ -101,7 +128,7 @@ export default async function TruckProfilePage({ params }: Props) {
             <div className="lg:hidden">
               <AppDownloadCta />
             </div>
-            <TruckQrPoster truck={truck} variant="mobile" />
+            <TruckQrPoster truck={truckQrPosterInfo} variant="mobile" />
             <TrustFooter truck={truck} />
           </div>
         </div>

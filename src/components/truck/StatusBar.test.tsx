@@ -87,29 +87,24 @@ describe("StatusBar location wording", () => {
   // truck (confirmed: El Taco Rico's service_area says "Morton, IL" while
   // its locations row says "Tremont, IL"). "Usually serving"/"View usual
   // location" both claimed a stability the data doesn't have.
-  it("labels the owner-entered service area as 'Based near', not 'Usually serving'", () => {
+  it("labels the owner-entered service area as 'Based near', not 'Usually serving', and reduces it to city/state", () => {
     const truck = makeTruck({ is_open: false, service_area: "1850, Ring Road, Elizabethtown, Kentucky" });
     render(<StatusBar truck={truck} />);
 
-    expect(screen.getByText("Based near: 1850, Ring Road, Elizabethtown, Kentucky")).toBeInTheDocument();
+    // Never the raw street address — see location.test.ts for the formatter's own coverage.
+    expect(screen.getByText("Based near: Elizabethtown, KY")).toBeInTheDocument();
+    expect(screen.queryByText(/Ring Road/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Usually serving/)).not.toBeInTheDocument();
   });
 
-  it("labels the currentLocation button 'View last known location', not 'View usual location'", () => {
-    const truck = makeTruck({
-      is_open: false,
-      currentLocation: { label: "1251, Ring Road, Elizabethtown, Kentucky", latitude: 37.7228032, longitude: -85.8952234 },
-    });
+  it("omits the Based near line entirely when service_area can't be safely reduced to city/state", () => {
+    const truck = makeTruck({ is_open: false, service_area: "PO Box 42" });
     render(<StatusBar truck={truck} />);
 
-    expect(screen.getByRole("link", { name: "View last known location" })).toHaveAttribute(
-      "href",
-      "https://www.google.com/maps/search/?api=1&query=37.7228032,-85.8952234"
-    );
-    expect(screen.queryByRole("link", { name: "View usual location" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Based near/)).not.toBeInTheDocument();
   });
 
-  it("still shows 'Get Directions' to currentLocation while actually live (unchanged)", () => {
+  it("shows the exact current location and 'Get Directions' while actually LIVE", () => {
     const truck = makeTruck({
       is_open: true,
       live_started_at: "2026-08-04T11:30:00.000Z",
@@ -118,7 +113,77 @@ describe("StatusBar location wording", () => {
     });
     render(<StatusBar truck={truck} />);
 
-    expect(screen.getByRole("link", { name: "Get Directions" })).toBeInTheDocument();
     expect(screen.getByText("Farmers Market")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Get Directions" })).toHaveAttribute(
+      "href",
+      "https://www.google.com/maps/search/?api=1&query=1,2"
+    );
+  });
+
+  // Privacy follow-up: currentLocation is a last-known "went LIVE from
+  // here" coordinate, which offline can be a commissary, home base, or
+  // test address rather than anywhere the owner intends to publicize right
+  // now. Once the truck is offline, none of that — label, link, or the
+  // raw lat/long — may reach the page in any form.
+  it("exposes no last-known-location text, link, or coordinates once the truck is offline", () => {
+    const truck = makeTruck({
+      is_open: false,
+      currentLocation: { label: "1251, Ring Road, Elizabethtown, Kentucky", latitude: 37.7228032, longitude: -85.8952234 },
+    });
+    const { container } = render(<StatusBar truck={truck} />);
+
+    expect(screen.queryByText(/Ring Road/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /last known location/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Get Directions" })).not.toBeInTheDocument();
+    expect(container.innerHTML).not.toContain("37.7228032");
+    expect(container.innerHTML).not.toContain("-85.8952234");
+  });
+
+  it("still shows the sanitized 'Based near' city/state when the truck is offline with a stored currentLocation", () => {
+    const truck = makeTruck({
+      is_open: false,
+      service_area: "1850, Ring Road, Elizabethtown, Kentucky",
+      currentLocation: { label: "1251, Ring Road, Elizabethtown, Kentucky", latitude: 37.7228032, longitude: -85.8952234 },
+    });
+    render(<StatusBar truck={truck} />);
+
+    expect(screen.getByText("Based near: Elizabethtown, KY")).toBeInTheDocument();
+  });
+
+  it("falls back to Call when offline and there is no safe location CTA", () => {
+    const truck = makeTruck({
+      is_open: false,
+      currentLocation: { label: "Home base", latitude: 1, longitude: 2 },
+      phone: "555-123-4567",
+      website: "https://example.com",
+    });
+    render(<StatusBar truck={truck} />);
+
+    expect(screen.getByRole("link", { name: "Call Test Truck" })).toHaveAttribute("href", "tel:555-123-4567");
+    expect(screen.queryByRole("link", { name: "Visit Website" })).not.toBeInTheDocument();
+  });
+
+  it("falls back to Website when offline, there is no safe location CTA, and no phone", () => {
+    const truck = makeTruck({
+      is_open: false,
+      currentLocation: { label: "Home base", latitude: 1, longitude: 2 },
+      phone: null,
+      website: "https://example.com",
+    });
+    render(<StatusBar truck={truck} />);
+
+    expect(screen.getByRole("link", { name: "Visit Website" })).toHaveAttribute("href", "https://example.com");
+  });
+
+  it("renders no primary-action button shell when offline with no location, phone, or website", () => {
+    const truck = makeTruck({
+      is_open: false,
+      currentLocation: { label: "Home base", latitude: 1, longitude: 2 },
+      phone: null,
+      website: null,
+    });
+    render(<StatusBar truck={truck} />);
+
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 });

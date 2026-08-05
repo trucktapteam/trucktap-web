@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import type { Truck } from "@/lib/types";
+import type { TruckQrPosterInfo } from "@/lib/truck-view-models";
 import { useBodyScrollLock, useDialogKeyTrap } from "./useDialogA11y";
 import { CloseIcon } from "./GalleryLightbox";
 import { PosterArtwork } from "./TruckQrPoster";
@@ -27,7 +27,7 @@ export function PosterPreviewModal({
   qrValue,
   onClose,
 }: {
-  truck: Truck;
+  truck: TruckQrPosterInfo;
   qrValue: string;
   onClose: () => void;
 }) {

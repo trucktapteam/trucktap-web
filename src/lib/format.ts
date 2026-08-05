@@ -58,7 +58,10 @@ export type LiveStatus =
  * `is_open && live_expires_at > now` as the real signal, and always pair
  * it with honest freshness wording rather than a bare badge.
  */
-export function getLiveStatus(truck: Truck, now: Date = new Date()): LiveStatus {
+export function getLiveStatus(
+  truck: Pick<Truck, "is_open" | "live_expires_at" | "live_started_at" | "last_live_updated_at">,
+  now: Date = new Date()
+): LiveStatus {
   const expiresAt = truck.live_expires_at ? new Date(truck.live_expires_at) : null;
   const isActuallyLive = truck.is_open && (!expiresAt || expiresAt.getTime() > now.getTime());
 
@@ -79,7 +82,7 @@ export function getLiveStatus(truck: Truck, now: Date = new Date()): LiveStatus 
   return { kind: "not-live", lastSeenLabel: null };
 }
 
-export function getTodayHours(truck: Truck, now: Date = new Date()) {
+export function getTodayHours(truck: Pick<Truck, "operating_hours">, now: Date = new Date()) {
   if (!truck.operating_hours) return null;
   const weekday = now.toLocaleDateString("en-US", { weekday: "long" }) as keyof typeof truck.operating_hours;
   return truck.operating_hours[weekday] ?? null;
@@ -136,12 +139,12 @@ export function isAnnouncementActive(
  * what upstream did, the same way `getUpcomingStops` doesn't trust its
  * caller to have already excluded cancelled stops.
  */
-export function getActiveAnnouncements(truck: Truck, now: Date = new Date()) {
+export function getActiveAnnouncements(truck: Pick<Truck, "announcements">, now: Date = new Date()) {
   return truck.announcements.filter((a) => a.message.trim() !== "" && isAnnouncementActive(a, now));
 }
 
 /** Cancelled/completed stops, and anything that has already ended, never show. */
-export function getUpcomingStops(truck: Truck, now: Date = new Date()) {
+export function getUpcomingStops(truck: Pick<Truck, "upcomingStops">, now: Date = new Date()) {
   return truck.upcomingStops.filter((s) => {
     if (s.status === "cancelled" || s.status === "completed") return false;
     return new Date(s.ends_at).getTime() > now.getTime();
@@ -149,7 +152,7 @@ export function getUpcomingStops(truck: Truck, now: Date = new Date()) {
 }
 
 /** `null` when there are no reviews yet — shared by the hero identity summary and ReviewsSection. */
-export function getRatingSummary(truck: Truck): { average: number; count: number } | null {
+export function getRatingSummary(truck: Pick<Truck, "reviews">): { average: number; count: number } | null {
   if (truck.reviews.length === 0) return null;
   const average = truck.reviews.reduce((sum, r) => sum + r.rating, 0) / truck.reviews.length;
   return { average, count: truck.reviews.length };

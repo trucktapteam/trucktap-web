@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Truck } from "@/lib/types";
+import type { QuickActionsInfo } from "@/lib/truck-view-models";
 
 // Shared with ConnectLinks so every chip on the sidebar (call, share, and
 // the social/website links) stays visually consistent — min-h-11 (44px)
@@ -10,7 +10,7 @@ import type { Truck } from "@/lib/types";
 export const ACTION_CHIP_CLASS =
   "inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-white px-4 py-2.5 text-xs font-semibold text-ink shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand hover:text-brand-dark hover:shadow-md active:translate-y-0 active:scale-[0.97]";
 
-export function QuickActions({ truck }: { truck: Truck }) {
+export function QuickActions({ truck }: { truck: QuickActionsInfo }) {
   const actions: Array<{ label: string; href: string; icon: React.ReactNode }> = [];
 
   if (truck.phone) {
@@ -45,7 +45,7 @@ export function QuickActions({ truck }: { truck: Truck }) {
   );
 }
 
-function ShareButton({ truck }: { truck: Truck }) {
+function ShareButton({ truck }: { truck: QuickActionsInfo }) {
   const [copied, setCopied] = useState(false);
 
   async function handleShare() {

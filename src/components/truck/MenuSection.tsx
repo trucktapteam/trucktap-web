@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { Truck } from "@/lib/types";
+import type { MenuSectionInfo } from "@/lib/truck-view-models";
 import { PlaceholderImage } from "./PlaceholderImage";
 import { SectionHeading } from "./SectionHeading";
 import { MenuItemGrid } from "./MenuItemGrid";
@@ -14,7 +14,7 @@ import { GalleryLightbox } from "./GalleryLightbox";
  * price/description breakdown typed in separately. Never an empty shell:
  * hides entirely when there's neither.
  */
-export function MenuSection({ truck }: { truck: Truck }) {
+export function MenuSection({ truck }: { truck: MenuSectionInfo }) {
   const hasItems = truck.menu_items.length > 0;
   const boardImages = truck.menu_images;
   const hasBoardPhotos = boardImages.length > 0;

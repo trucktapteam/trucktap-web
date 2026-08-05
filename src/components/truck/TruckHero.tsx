@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { Truck } from "@/lib/types";
+import type { TruckHeroInfo } from "@/lib/truck-view-models";
 import { getRatingSummary } from "@/lib/format";
 import { isSupabaseStorageImageUrl } from "@/lib/allowed-image-hosts";
 import { PlaceholderImage } from "./PlaceholderImage";
 import { GalleryLightbox } from "./GalleryLightbox";
 
-export function TruckHero({ truck }: { truck: Truck }) {
+export function TruckHero({ truck }: { truck: TruckHeroInfo }) {
   const ratingSummary = getRatingSummary(truck);
 
   // Only a real, loadable Supabase Storage photo is worth a full-size

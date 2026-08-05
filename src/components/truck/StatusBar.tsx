@@ -1,29 +1,29 @@
-import type { Truck } from "@/lib/types";
+import type { StatusBarTruck } from "@/lib/truck-view-models";
 import { getLiveStatus, getTodayHours, getUpcomingStops } from "@/lib/format";
+import { formatBasedNearLocation } from "@/lib/location";
 
 type PrimaryAction = { label: string; href: string; external: boolean; variant: "primary" | "secondary" };
 
 /**
- * The one obvious customer action for this truck. "Get Directions" is
- * reserved for a truck that's actually live right now — a saved location
- * on a closed/not-live truck is still useful, but sending someone there
- * with the same urgent wording would wrongly imply the truck is currently
- * serving from it, so that case gets softer wording and a quieter button
- * instead. Falls back to the next most useful thing we actually have.
+ * The one obvious customer action for this truck.
  *
- * `truck.currentLocation` (the `locations` table) is not a stable "usual
- * spot" — production data shows it gets upserted to wherever the truck
- * last went LIVE, and can be a different city than `service_area` for the
- * same truck (e.g. El Taco Rico: service_area "Morton, IL" vs. this row
- * "Tremont, IL"). "View last known location" is what the data actually
- * supports; "usual location" implied a claim it can't back up.
+ * `truck.currentLocation` (the `locations` table) is a last-known "went
+ * LIVE from here" coordinate, not a stable "usual spot" — production data
+ * shows it can be a commissary, a home base, a test address, or wherever
+ * the truck last happened to go live, and can be a different city than
+ * `service_area` for the same truck (e.g. El Taco Rico: service_area
+ * "Morton, IL" vs. this row "Tremont, IL"). That's an acceptable, expected
+ * thing to send a customer to while the truck is actually LIVE and
+ * intentionally sharing it right now ("Get Directions") — it is not
+ * acceptable to expose or link to once the truck goes offline, since at
+ * that point it's just a private/historical coordinate with no owner
+ * intent behind showing it. Offline, this falls through to the next most
+ * useful thing we actually have: Call, then Website, then no button.
  */
-function getPrimaryAction(truck: Truck, isLive: boolean): PrimaryAction | null {
-  if (truck.currentLocation) {
+function getPrimaryAction(truck: StatusBarTruck, isLive: boolean): PrimaryAction | null {
+  if (isLive && truck.currentLocation) {
     const href = `https://www.google.com/maps/search/?api=1&query=${truck.currentLocation.latitude},${truck.currentLocation.longitude}`;
-    return isLive
-      ? { label: "Get Directions", href, external: true, variant: "primary" }
-      : { label: "View last known location", href, external: true, variant: "secondary" };
+    return { label: "Get Directions", href, external: true, variant: "primary" };
   }
   if (truck.phone) {
     return { label: `Call ${truck.name}`, href: `tel:${truck.phone}`, external: false, variant: "primary" };
@@ -34,16 +34,17 @@ function getPrimaryAction(truck: Truck, isLive: boolean): PrimaryAction | null {
   return null;
 }
 
-export function StatusBar({ truck }: { truck: Truck }) {
+export function StatusBar({ truck }: { truck: StatusBarTruck }) {
   const status = getLiveStatus(truck);
   const todayHours = getTodayHours(truck);
   const hasUpcomingStops = getUpcomingStops(truck).length > 0;
   const isLive = status.kind === "live";
   const primaryAction = getPrimaryAction(truck, isLive);
+  const basedNear = formatBasedNearLocation(truck.service_area);
 
   // Location/hours is its own group only when it actually has something to
   // show — no divider floating above an empty gap.
-  const hasLocationGroup = isLive ? Boolean(truck.currentLocation) : Boolean(truck.service_area || todayHours);
+  const hasLocationGroup = isLive ? Boolean(truck.currentLocation) : Boolean(basedNear || todayHours);
 
   return (
     <section
@@ -95,14 +96,13 @@ export function StatusBar({ truck }: { truck: Truck }) {
               {/* `service_area` is genuinely owner-entered for public display
                   (per its own column comment), but owners often fill it in
                   as a specific street address rather than a described
-                  region — "Based near" reads naturally either way, where
-                  "Usually serving" implies a coverage area this field
-                  doesn't always describe. */}
-              {truck.service_area && (
-                <p className="text-sm font-medium text-ink">Based near: {truck.service_area}</p>
-              )}
+                  region — reducing it to city/state via formatBasedNearLocation
+                  keeps a home/personal address off the public profile. "Based
+                  near" reads naturally either way, where "Usually serving"
+                  implies a coverage area this field doesn't always describe. */}
+              {basedNear && <p className="text-sm font-medium text-ink">Based near: {basedNear}</p>}
               {todayHours && (
-                <p className={truck.service_area ? "mt-1 text-sm text-muted" : "text-sm text-muted"}>
+                <p className={basedNear ? "mt-1 text-sm text-muted" : "text-sm text-muted"}>
                   {todayHours.closed ? "Closed today" : `Today: ${todayHours.open} – ${todayHours.close}`}
                 </p>
               )}

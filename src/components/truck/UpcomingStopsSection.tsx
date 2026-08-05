@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState, useSyncExternalStore } from "react";
-import type { Truck } from "@/lib/types";
+import type { UpcomingStopsInfo } from "@/lib/truck-view-models";
 import { formatDateTime, getUpcomingStops } from "@/lib/format";
 import { PlaceholderImage } from "./PlaceholderImage";
 import { SectionHeading } from "./SectionHeading";
@@ -24,7 +24,7 @@ function useMounted(): boolean {
   );
 }
 
-export function UpcomingStopsSection({ truck }: { truck: Truck }) {
+export function UpcomingStopsSection({ truck }: { truck: UpcomingStopsInfo }) {
   const stops = getUpcomingStops(truck);
   const [expanded, setExpanded] = useState(false);
 

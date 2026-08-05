@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
-import type { Truck } from "@/lib/types";
+import type { TruckQrPosterInfo } from "@/lib/truck-view-models";
 import { getTruckQrPayload } from "@/lib/truck-share";
 import { PlaceholderImage } from "./PlaceholderImage";
 import { PosterPreviewModal } from "./PosterPreviewModal";
@@ -16,7 +16,7 @@ import { PosterPreviewModal } from "./PosterPreviewModal";
  * Always renders: every truck has an id/name (a QR can always be built),
  * and hero/logo gracefully degrade via PlaceholderImage's own fallback.
  */
-export function TruckQrPoster({ truck, variant }: { truck: Truck; variant: "sidebar" | "mobile" }) {
+export function TruckQrPoster({ truck, variant }: { truck: TruckQrPosterInfo; variant: "sidebar" | "mobile" }) {
   const qrValue = getTruckQrPayload(truck.id);
   const qrSize = variant === "sidebar" ? 148 : 176;
 
@@ -53,7 +53,15 @@ export function TruckQrPoster({ truck, variant }: { truck: Truck; variant: "side
  * full-size (preview modal) contexts — same markup at any width, so
  * there's exactly one poster design to keep in sync with the app's.
  */
-export function PosterArtwork({ truck, qrValue, qrSize }: { truck: Truck; qrValue: string; qrSize: number }) {
+export function PosterArtwork({
+  truck,
+  qrValue,
+  qrSize,
+}: {
+  truck: TruckQrPosterInfo;
+  qrValue: string;
+  qrSize: number;
+}) {
   return (
     <div className="w-full overflow-hidden rounded-[1.75rem] bg-white shadow-[var(--shadow-pop)]">
       <div className="h-3 w-full bg-brand" />

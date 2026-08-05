@@ -1,12 +1,12 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { Truck } from "@/lib/types";
+import type { GallerySectionInfo } from "@/lib/truck-view-models";
 import { PlaceholderImage } from "./PlaceholderImage";
 import { SectionHeading } from "./SectionHeading";
 import { GalleryLightbox } from "./GalleryLightbox";
 
-export function GallerySection({ truck }: { truck: Truck }) {
+export function GallerySection({ truck }: { truck: GallerySectionInfo }) {
   const photos = truck.gallery_images;
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const triggerRefs = useRef<Array<HTMLButtonElement | null>>([]);
