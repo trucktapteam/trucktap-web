@@ -1,15 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { screenshots } from "@/lib/home-data";
+import { storeScreenshots } from "@/lib/home-data";
 import { SectionHead } from "./SectionHead";
-
-const SCREENS = [
-  { ...screenshots.liveMap, feature: true },
-  { ...screenshots.truckProfile, feature: true },
-  { ...screenshots.truckMenu, feature: false },
-  { ...screenshots.favorites, feature: false },
-  { ...screenshots.notifications, feature: false },
-];
 
 export function ScreensSection() {
   return (
@@ -17,25 +9,30 @@ export function ScreensSection() {
       <div className="mx-auto max-w-6xl">
         <SectionHead
           kicker="App screens"
-          title="Real discovery, not a dusty list."
-          description="Map view, discovery, profiles, and sightings work together so customers can find trucks and owners can be found."
+          title="See it in action."
+          description="The exact screens live on the App Store and Google Play today — real discovery, real profiles, real trucks."
         />
 
-        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-6">
-          {SCREENS.map((s, i) => (
+        {/* Each screenshot already carries its own headline/subcopy (the
+            actual App Store marketing set) — a horizontal, snap-scrolling
+            strip lets all 10 stay full-size and legible instead of
+            cramming them into a fixed grid. */}
+        <div
+          className="mt-10 -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:mx-0 sm:px-0 lg:gap-5"
+          aria-label="TruckTap app screens"
+        >
+          {storeScreenshots.map((s) => (
             <figure
               key={s.file}
-              className={`overflow-hidden rounded-[1.9rem] border border-navy/10 bg-white p-2.5 shadow-[0_24px_60px_rgba(17,24,39,0.14)] transition duration-300 hover:-translate-y-1.5 hover:rotate-[-0.4deg] hover:shadow-[0_30px_70px_rgba(17,24,39,0.18)] ${
-                s.feature ? "lg:col-span-3" : "lg:col-span-2"
-              } ${i === 1 || i === 4 ? "lg:mt-7" : ""}`}
+              className="w-[78vw] shrink-0 snap-center overflow-hidden rounded-[1.9rem] border border-navy/10 bg-white shadow-[0_24px_60px_rgba(17,24,39,0.14)] transition duration-300 hover:-translate-y-1.5 hover:shadow-[0_30px_70px_rgba(17,24,39,0.18)] sm:w-[300px] lg:w-[340px]"
             >
-              <div className="relative aspect-[1242/2688] w-full overflow-hidden rounded-[1.5rem]">
+              <div className="relative aspect-[1290/2796] w-full overflow-hidden rounded-[1.9rem]">
                 <Image
                   src={`/home/screenshots/${s.file}`}
                   alt={s.alt}
                   fill
                   className="object-cover"
-                  sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
+                  sizes="(min-width: 1024px) 340px, (min-width: 640px) 300px, 78vw"
                 />
               </div>
             </figure>

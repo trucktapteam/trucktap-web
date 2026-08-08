@@ -31,10 +31,10 @@ export function OwnersSection() {
             </span>
             <div className="relative z-10 w-full max-w-[280px] overflow-hidden rounded-[1.75rem] border-[8px] border-hardline shadow-[0_24px_55px_rgba(0,0,0,0.38)]">
               <Image
-                src={`/home/screenshots/${screenshots.goLive.file}`}
-                alt={screenshots.goLive.alt}
-                width={1242}
-                height={2688}
+                src={`/home/screenshots/${screenshots.ownerDashboard.file}`}
+                alt={screenshots.ownerDashboard.alt}
+                width={1440}
+                height={3088}
                 className="h-auto w-full"
               />
             </div>

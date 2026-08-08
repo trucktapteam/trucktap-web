@@ -149,29 +149,29 @@ function PhoneCollage() {
     <div className="animate-phone-float relative h-full">
       <div className="absolute top-0 left-[8%] w-[64%] max-w-[290px] -rotate-[5deg] overflow-hidden rounded-[2rem] border-[7px] border-hardline shadow-[0_30px_70px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:-rotate-3">
         <Image
-          src={`/home/screenshots/${screenshots.liveMap.file}`}
-          alt={screenshots.liveMap.alt}
-          width={1242}
-          height={2688}
+          src={`/home/screenshots/${screenshots.heroDiscover.file}`}
+          alt={screenshots.heroDiscover.alt}
+          width={1440}
+          height={3088}
           className="h-auto w-full"
           priority
         />
       </div>
       <div className="absolute top-[58px] right-[1%] w-[42%] rotate-[7deg] overflow-hidden rounded-3xl border-[5px] border-hardline shadow-[0_30px_70px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:rotate-[5deg]">
         <Image
-          src={`/home/screenshots/${screenshots.truckProfile.file}`}
-          alt={screenshots.truckProfile.alt}
-          width={1242}
-          height={2688}
+          src={`/home/screenshots/${screenshots.heroProfile.file}`}
+          alt={screenshots.heroProfile.alt}
+          width={1440}
+          height={3088}
           className="h-auto w-full"
         />
       </div>
       <div className="absolute right-[8%] bottom-4 w-[46%] -rotate-3 overflow-hidden rounded-2xl border-[5px] border-hardline shadow-[0_30px_70px_rgba(0,0,0,0.45)] transition duration-300 hover:-translate-y-1.5 hover:-rotate-1">
         <Image
-          src={`/home/screenshots/${screenshots.truckMenu.file}`}
-          alt={screenshots.truckMenu.alt}
-          width={1242}
-          height={2688}
+          src={`/home/screenshots/${screenshots.heroMenu.file}`}
+          alt={screenshots.heroMenu.alt}
+          width={1440}
+          height={3088}
           className="h-auto w-full"
         />
       </div>

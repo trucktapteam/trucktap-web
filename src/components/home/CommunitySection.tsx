@@ -15,8 +15,8 @@ export function CommunitySection() {
           <div className="grid grid-cols-2 gap-3.5" aria-label="Food truck app photos">
             <div className="relative row-span-2 -rotate-2 overflow-hidden rounded-[1.75rem] border-[8px] border-white bg-black shadow-[0_14px_34px_rgba(17,24,39,0.1)] transition duration-200 hover:z-10 hover:-translate-y-1 hover:rotate-0 hover:shadow-[0_24px_60px_rgba(17,24,39,0.14)]">
               <Image
-                src={`/home/screenshots/${screenshots.discoverMap.file}`}
-                alt={screenshots.discoverMap.alt}
+                src={`/home/screenshots/${screenshots.communityMap.file}`}
+                alt={screenshots.communityMap.alt}
                 fill
                 className="object-contain"
                 sizes="(min-width: 1024px) 22vw, 44vw"
@@ -25,8 +25,8 @@ export function CommunitySection() {
             <div className="rotate-2 overflow-hidden rounded-[1.75rem] border-[8px] border-white bg-black shadow-[0_14px_34px_rgba(17,24,39,0.1)] transition duration-200 hover:z-10 hover:-translate-y-1 hover:rotate-0 hover:shadow-[0_24px_60px_rgba(17,24,39,0.14)]">
               <div className="relative aspect-[1242/2688] w-full">
                 <Image
-                  src={`/home/screenshots/${screenshots.truckProfile.file}`}
-                  alt="TruckTap truck profile with real truck details"
+                  src={`/home/screenshots/${screenshots.communityProfile.file}`}
+                  alt={screenshots.communityProfile.alt}
                   fill
                   className="object-contain"
                   sizes="(min-width: 1024px) 22vw, 44vw"
@@ -36,8 +36,8 @@ export function CommunitySection() {
             <div className="-rotate-1 overflow-hidden rounded-[1.75rem] border-[8px] border-white bg-black shadow-[0_14px_34px_rgba(17,24,39,0.1)] transition duration-200 hover:z-10 hover:-translate-y-1 hover:rotate-0 hover:shadow-[0_24px_60px_rgba(17,24,39,0.14)]">
               <div className="relative aspect-[1242/2688] w-full">
                 <Image
-                  src={`/home/screenshots/${screenshots.notifications.file}`}
-                  alt={screenshots.notifications.alt}
+                  src={`/home/screenshots/${screenshots.communityMenu.file}`}
+                  alt={screenshots.communityMenu.alt}
                   fill
                   className="object-contain"
                   sizes="(min-width: 1024px) 22vw, 44vw"

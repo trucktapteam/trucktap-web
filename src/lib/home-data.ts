@@ -33,16 +33,42 @@ export const fallbackRollingTrucks: FallbackRollingTruck[] = [
 
 export type AppScreenshot = { file: string; alt: string };
 
-/** Source: screenshots/ in TruckTap-site. 1242x2688 (iPhone) originals. */
+/**
+ * Real device screenshots of the live app, taken against real TruckTap
+ * data (see the geography backfill work — several of these are the same
+ * trucks: Güero's Salsa, Papa Pasta, Everetts Family Sweets). Source:
+ * public/home/screenshots/ — the hero, community, and owner files were
+ * all captured at 1440x3088; keep that aspect ratio in mind if any
+ * consumer ever sets an explicit width/height instead of using `fill`.
+ */
 export const screenshots = {
-  liveMap: { file: "live-map.jpg", alt: "TruckTap live map showing nearby food trucks" },
-  truckProfile: { file: "truck-profile.jpg", alt: "TruckTap truck profile screen" },
-  truckMenu: { file: "truck-menu.jpg", alt: "TruckTap truck menu and gallery screen" },
-  favorites: { file: "favorites-screen.jpg", alt: "TruckTap favorites and profile screen" },
-  notifications: { file: "notifications-screen.jpg", alt: "TruckTap notifications and settings screen" },
-  discoverMap: { file: "discover-map.jpg", alt: "TruckTap discovery map screen" },
-  goLive: { file: "go-live.jpg", alt: "TruckTap Go Live screen for food truck owners" },
+  heroDiscover: { file: "hero-discover.jpg", alt: "TruckTap discovery map showing food trucks live across Hardin County, Kentucky" },
+  heroProfile: { file: "hero-profile.jpg", alt: "Güero's Salsa and More truck profile on TruckTap, open now with a 5-star rating" },
+  heroMenu: { file: "hero-menu.jpg", alt: "Sonny Boys Backyard truck profile showing barbecue sandwiches" },
+  communityMap: { file: "community-map.jpg", alt: "TruckTap map view showing food truck locations across the region" },
+  communityProfile: { file: "community-profile.jpg", alt: "Papa Pasta truck profile on TruckTap with customer reviews" },
+  communityMenu: { file: "community-menu.jpg", alt: "Everetts Family Sweets and More menu items with prices on TruckTap" },
+  ownerDashboard: { file: "owner-dashboard.jpg", alt: "TruckTap owner dashboard showing the Go Live button and today's opportunities" },
 } satisfies Record<string, AppScreenshot>;
+
+/**
+ * The 10-screenshot App Store marketing set — each image already has its
+ * own headline/subcopy baked in (that's the point: these are the exact
+ * assets submitted to the App Store and Google Play), so consumers should
+ * show them near-verbatim rather than captioning them again.
+ */
+export const storeScreenshots: AppScreenshot[] = [
+  { file: "store/10-your-next-favorite-meal.png", alt: "Your Next Favorite Meal Awaits — dozens of trucks, open right now" },
+  { file: "store/01-find-food-trucks.png", alt: "Find Food Trucks Near You — real trucks, real locations, updated live" },
+  { file: "store/02-know-whos-open.png", alt: "Know Who's Open Now — see live status before you drive over" },
+  { file: "store/03-explore-menus.png", alt: "Explore Menus Before You Go — browse dishes and prices ahead of time" },
+  { file: "store/04-eat-with-confidence.png", alt: "Eat With Confidence — real reviews from real regulars" },
+  { file: "store/05-see-whats-cooking.png", alt: "See What's Cooking — photos straight from the truck" },
+  { file: "store/06-navigate-one-tap.png", alt: "Navigate With One Tap — turn-by-turn directions, instantly" },
+  { file: "store/07-never-miss-favorites.png", alt: "Never Miss Your Favorites — see upcoming stops before they roll out" },
+  { file: "store/08-always-up-to-date.png", alt: "Always Up To Date — owners update hours and location in real time" },
+  { file: "store/09-discover-local-favorites.png", alt: "Discover Local Favorites — new trucks and hidden gems near you" },
+];
 
 export type CommunityPhoto = { file: string; alt: string; feature?: boolean };
 
