@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { FACEBOOK_URL, screenshots } from "@/lib/home-data";
 import { APP_STORE_URL, GOOGLE_PLAY_URL } from "@/lib/app-links";
 import { heroPanelGradient, panelGridOverlay } from "@/lib/home-gradients";
@@ -28,7 +29,17 @@ export function HeroSection() {
               favorites, and stop chasing stale posts across the internet.
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-3.5" aria-label="App download links">
+            <div className="mt-6">
+              <Link
+                href="/trucks"
+                className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-2xl bg-brand px-7 text-base font-black text-white shadow-[0_15px_30px_rgba(255,107,0,0.32)] transition duration-200 hover:-translate-y-1 hover:bg-brand-dark active:translate-y-0"
+              >
+                Find Food Trucks
+                <ArrowIcon />
+              </Link>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-3.5" aria-label="App download links">
               <a
                 href={APP_STORE_URL}
                 target="_blank"
@@ -108,6 +119,18 @@ export function HeroSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="h-4 w-4">
+      <path
+        fillRule="evenodd"
+        d="M3 10a.75.75 0 0 1 .75-.75h10.638L11.29 6.16a.75.75 0 1 1 1.02-1.1l5 4.25a.75.75 0 0 1 0 1.18l-5 4.25a.75.75 0 1 1-1.02-1.1l3.098-2.59H3.75A.75.75 0 0 1 3 10Z"
+        clipRule="evenodd"
+      />
+    </svg>
   );
 }
 

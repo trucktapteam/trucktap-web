@@ -1,4 +1,5 @@
 import type { Truck } from "./types";
+import type { DirectoryTruckCard } from "./trucks-directory";
 
 /**
  * Minimal, fully-valid Truck fixture for unit tests — override only the
@@ -37,6 +38,25 @@ export function makeTruck(overrides: Partial<Truck> = {}): Truck {
     currentLocation: null,
     upcomingStops: [],
     reviews: [],
+    ...overrides,
+  };
+}
+
+/** Minimal, fully-valid `/trucks` directory card fixture — same override pattern as `makeTruck`. */
+export function makeDirectoryTruckCard(overrides: Partial<DirectoryTruckCard> = {}): DirectoryTruckCard {
+  return {
+    id: "test-truck",
+    slug: "test-truck",
+    name: "Test Truck",
+    cuisine_type: null,
+    hero_image: null,
+    logo: null,
+    is_verified: false,
+    tier: "ordinary",
+    lastLiveUpdatedAt: null,
+    freshnessLabel: null,
+    basedNear: null,
+    nextStop: null,
     ...overrides,
   };
 }

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { FACEBOOK_URL } from "@/lib/home-data";
 
 const NAV_LINKS = [
+  { href: "/trucks", label: "Find Trucks" },
   { href: "#why", label: "Why" },
   { href: "#how", label: "How it works" },
   { href: "#screens", label: "Screens" },

@@ -9,12 +9,18 @@ import { getPublicTruckSitemapEntries } from "@/lib/truck-data";
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const homepage: MetadataRoute.Sitemap = [
+  const staticPages: MetadataRoute.Sitemap = [
     {
       url: SITE_URL,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1,
+    },
+    {
+      url: `${SITE_URL}/trucks`,
+      lastModified: new Date(),
+      changeFrequency: "hourly",
+      priority: 0.9,
     },
   ];
 
@@ -29,10 +35,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
   } catch (error) {
     // A transient Supabase outage shouldn't take the whole sitemap down —
-    // degrade to homepage-only rather than erroring the route (which
-    // would make sitemap.xml itself unreachable by crawlers).
-    console.error("Sitemap truck query failed, serving homepage-only sitemap:", error);
+    // degrade to the static pages only rather than erroring the route
+    // (which would make sitemap.xml itself unreachable by crawlers).
+    console.error("Sitemap truck query failed, serving static-pages-only sitemap:", error);
   }
 
-  return [...homepage, ...truckEntries];
+  return [...staticPages, ...truckEntries];
 }
