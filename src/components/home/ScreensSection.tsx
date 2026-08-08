@@ -41,7 +41,7 @@ export function ScreensSection() {
 
         <div className="mt-8 flex justify-center">
           <Link
-            href="/truck/smoky-wheels-bbq"
+            href="/truck/everetts-family-sweets-and-more-llc"
             className="inline-flex items-center gap-2 rounded-2xl border border-navy/15 bg-white px-5 py-3 font-black text-navy shadow-[0_14px_34px_rgba(17,24,39,0.1)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_24px_60px_rgba(17,24,39,0.14)] active:translate-y-0"
           >
             Preview a sample truck profile
