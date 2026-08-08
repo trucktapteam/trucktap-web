@@ -160,24 +160,38 @@ function mapTrustBadges(value: unknown): Truck["trust_badges"] {
 }
 
 /**
- * Looks up one truck by slug against live Supabase data, or `null` if no
- * public truck matches — the same contract `getMockTruckBySlug` had, so
- * the route needs no other changes. Query failures (outages, etc.) throw
- * rather than resolving to `null`, so they don't get misreported as a
- * missing truck by the route's `notFound()` call.
+ * True for well-formed RFC 4122 UUIDs (versions 1-5) — used to decide
+ * whether a `/truck/[slug]` path segment that didn't match any slug is
+ * worth a second lookup by id, versus just a typo'd or unknown slug.
  */
-export async function getTruckBySlug(slug: string): Promise<Truck | null> {
-  const supabase = createSupabaseServerClient();
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
 
-  const { data: truckRow, error: truckError } = await supabase
+type Supabase = ReturnType<typeof createSupabaseServerClient>;
+
+async function loadPublicTruckRow(
+  supabase: Supabase,
+  column: "slug" | "id",
+  value: string
+): Promise<PublicTruckRow | null> {
+  const { data, error } = await supabase
     .from("public_trucks")
     .select(PUBLIC_TRUCK_COLUMNS)
-    .eq("slug", slug)
+    .eq(column, value)
     .maybeSingle<PublicTruckRow>();
 
-  if (truckError) throw new Error(`Failed to load truck "${slug}": ${truckError.message}`);
-  if (!truckRow) return null;
+  if (error) throw new Error(`Failed to load truck (${column}=${value}): ${error.message}`);
+  return data;
+}
 
+/**
+ * Loads every related entity (location, stops, reviews + their reviewer
+ * profiles and owner replies) for a truck row already resolved from
+ * `public_trucks`, and assembles the full `Truck` contract. Shared by both
+ * slug- and id-based lookups so the two entry points can never drift.
+ */
+async function hydrateTruck(supabase: Supabase, truckRow: PublicTruckRow): Promise<Truck> {
   const [locationResult, stopsResult, reviewsResult] = await Promise.all([
     supabase
       .from("locations")
@@ -199,13 +213,13 @@ export async function getTruckBySlug(slug: string): Promise<Truck | null> {
   ]);
 
   if (locationResult.error) {
-    throw new Error(`Failed to load location for "${slug}": ${locationResult.error.message}`);
+    throw new Error(`Failed to load location for truck "${truckRow.id}": ${locationResult.error.message}`);
   }
   if (stopsResult.error) {
-    throw new Error(`Failed to load upcoming stops for "${slug}": ${stopsResult.error.message}`);
+    throw new Error(`Failed to load upcoming stops for truck "${truckRow.id}": ${stopsResult.error.message}`);
   }
   if (reviewsResult.error) {
-    throw new Error(`Failed to load reviews for "${slug}": ${reviewsResult.error.message}`);
+    throw new Error(`Failed to load reviews for truck "${truckRow.id}": ${reviewsResult.error.message}`);
   }
 
   const reviewRows = reviewsResult.data ?? [];
@@ -231,10 +245,10 @@ export async function getTruckBySlug(slug: string): Promise<Truck | null> {
   ]);
 
   if (profilesResult.error) {
-    throw new Error(`Failed to load reviewer profiles for "${slug}": ${profilesResult.error.message}`);
+    throw new Error(`Failed to load reviewer profiles for truck "${truckRow.id}": ${profilesResult.error.message}`);
   }
   if (repliesResult.error) {
-    throw new Error(`Failed to load review replies for "${slug}": ${repliesResult.error.message}`);
+    throw new Error(`Failed to load review replies for truck "${truckRow.id}": ${repliesResult.error.message}`);
   }
 
   const profileById = new Map((profilesResult.data ?? []).map((p) => [p.id, p]));
@@ -309,4 +323,68 @@ export async function getTruckBySlug(slug: string): Promise<Truck | null> {
   };
 
   return truck;
+}
+
+/**
+ * Looks up one truck by slug against live Supabase data, or `null` if no
+ * public truck matches — the same contract `getMockTruckBySlug` had, so
+ * the route needs no other changes. Query failures (outages, etc.) throw
+ * rather than resolving to `null`, so they don't get misreported as a
+ * missing truck by the route's `notFound()` call.
+ */
+export async function getTruckBySlug(slug: string): Promise<Truck | null> {
+  const supabase = createSupabaseServerClient();
+  const truckRow = await loadPublicTruckRow(supabase, "slug", slug);
+  if (!truckRow) return null;
+  return hydrateTruck(supabase, truckRow);
+}
+
+/**
+ * Looks up one truck by id (its Supabase row UUID) against live data, or
+ * `null` if no public truck matches. `public_trucks` already excludes
+ * archived/test rows at the row level (see the RLS/view migration), so
+ * this can never resolve a truck `getTruckBySlug` wouldn't also be able
+ * to serve under its slug — it's purely a different lookup key onto the
+ * same public contract.
+ */
+export async function getTruckById(id: string): Promise<Truck | null> {
+  const supabase = createSupabaseServerClient();
+  const truckRow = await loadPublicTruckRow(supabase, "id", id);
+  if (!truckRow) return null;
+  return hydrateTruck(supabase, truckRow);
+}
+
+export type TruckRouteResolution = {
+  truck: Truck;
+  /**
+   * Non-null when this truck was only found via its legacy UUID, not the
+   * requested slug — the caller should permanently redirect to
+   * `/truck/${redirectToSlug}` rather than rendering in place, so the
+   * canonical, human-readable URL is what search engines and browser
+   * history end up with.
+   */
+  redirectToSlug: string | null;
+};
+
+/**
+ * Resolves a `/truck/[slug]` path segment for both current (slug) and
+ * legacy (raw Supabase UUID) links, without changing the QR/poster
+ * payload the app and this site's own `TruckQrPoster` already encode
+ * (`/truck/<truck id>` — see truck-share.ts). Slug match is tried first
+ * since that's the overwhelmingly common case; the id fallback only runs
+ * for values that are actually well-formed UUIDs, so a typo'd or unknown
+ * slug takes one query, not two. Both lookups go through
+ * `public_trucks`, so archived/test/non-public trucks never resolve
+ * either way.
+ */
+export async function resolveTruckForRoute(param: string): Promise<TruckRouteResolution | null> {
+  const bySlug = await getTruckBySlug(param);
+  if (bySlug) return { truck: bySlug, redirectToSlug: null };
+
+  if (!isUuid(param)) return null;
+
+  const byId = await getTruckById(param);
+  if (!byId) return null;
+
+  return { truck: byId, redirectToSlug: byId.slug };
 }

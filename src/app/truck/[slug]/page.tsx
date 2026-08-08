@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { getTruckBySlug } from "@/lib/truck-data";
+import { notFound, permanentRedirect } from "next/navigation";
+import { resolveTruckForRoute } from "@/lib/truck-data";
 import { TruckHero } from "@/components/truck/TruckHero";
 import { StatusBar } from "@/components/truck/StatusBar";
 import { QuickActions } from "@/components/truck/QuickActions";
@@ -30,8 +30,9 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const truck = await getTruckBySlug(slug);
-  if (!truck) return {};
+  const resolution = await resolveTruckForRoute(slug);
+  if (!resolution) return {};
+  const { truck } = resolution;
 
   const description = (truck.bio ?? truck.description ?? `${truck.name} on TruckTap.`).slice(0, 155);
 
@@ -48,10 +49,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TruckProfilePage({ params }: Props) {
   const { slug } = await params;
-  const truck = await getTruckBySlug(slug);
+  const resolution = await resolveTruckForRoute(slug);
 
-  if (!truck) notFound();
+  if (!resolution) notFound();
+  if (resolution.redirectToSlug) permanentRedirect(`/truck/${resolution.redirectToSlug}`);
 
+  const { truck } = resolution;
   const pageUrl = `https://trucktap-web.vercel.app/truck/${truck.slug}`;
 
   // Every Client Component below gets one of these explicitly narrowed
