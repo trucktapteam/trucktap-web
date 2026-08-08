@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getDirectoryTrucks, rankDirectoryTrucks } from "./trucks-directory";
+import { getDirectoryTrucks, getRankedDirectoryTrucks, rankDirectoryTrucks } from "./trucks-directory";
 import { createSupabaseServerClient } from "./supabase/server";
 import { makeDirectoryTruckCard as makeCard } from "./test-fixtures";
 
@@ -74,6 +74,7 @@ type TableResult = { data: unknown; error: { message: string } | null };
 function makeChain(result: TableResult) {
   const chain = {
     select: vi.fn(() => chain),
+    eq: vi.fn(() => chain),
     in: vi.fn(() => chain),
     order: vi.fn(() => chain),
     returns: vi.fn(() => chain),
@@ -84,11 +85,18 @@ function makeChain(result: TableResult) {
 }
 
 function mockSupabaseTables(resolvers: Record<string, TableResult>) {
-  const from = vi.fn((table: string) => makeChain(resolvers[table] ?? { data: [], error: null }));
+  // One chain instance per table, reused across calls — lets a test grab
+  // e.g. `chains.public_trucks.eq` and assert on how the query was built,
+  // not just what it resolved to.
+  const chains: Record<string, ReturnType<typeof makeChain>> = {};
+  const from = vi.fn((table: string) => {
+    if (!chains[table]) chains[table] = makeChain(resolvers[table] ?? { data: [], error: null });
+    return chains[table];
+  });
   vi.mocked(createSupabaseServerClient).mockReturnValue({
     from,
   } as unknown as ReturnType<typeof createSupabaseServerClient>);
-  return { from };
+  return { from, chains };
 }
 
 const NOW = new Date("2026-08-08T12:00:00.000Z");
@@ -119,6 +127,30 @@ describe("getDirectoryTrucks", () => {
 
     expect(from).toHaveBeenCalledWith("public_trucks");
     expect(from).not.toHaveBeenCalledWith("trucks");
+  });
+
+  it("applies no eq() filter when called with no filter (the plain /trucks case)", async () => {
+    const { chains } = mockSupabaseTables({ public_trucks: { data: [], error: null } });
+
+    await getDirectoryTrucks(NOW);
+
+    expect(chains.public_trucks.eq).not.toHaveBeenCalled();
+  });
+
+  it("filters on home_state_slug for a state-page query", async () => {
+    const { chains } = mockSupabaseTables({ public_trucks: { data: [], error: null } });
+
+    await getDirectoryTrucks(NOW, { stateSlug: "kentucky" });
+
+    expect(chains.public_trucks.eq).toHaveBeenCalledWith("home_state_slug", "kentucky");
+  });
+
+  it("filters on home_city_slug for a city-page query", async () => {
+    const { chains } = mockSupabaseTables({ public_trucks: { data: [], error: null } });
+
+    await getDirectoryTrucks(NOW, { citySlug: "elizabethtown-ky" });
+
+    expect(chains.public_trucks.eq).toHaveBeenCalledWith("home_city_slug", "elizabethtown-ky");
   });
 
   it("marks a truck live when is_open and live_expires_at is in the future, using the sanitized service area", async () => {
@@ -228,5 +260,34 @@ describe("getDirectoryTrucks", () => {
     });
 
     await expect(getDirectoryTrucks(NOW)).rejects.toThrow("boom");
+  });
+});
+
+describe("getRankedDirectoryTrucks", () => {
+  // A geography page (state/city) is just getDirectoryTrucks + a filter —
+  // it must get exactly the same live-before-upcoming-before-ordinary
+  // ranking /trucks does, not a second implementation of the ordering.
+  it("applies the same live > upcoming > ordinary ranking to a filtered (geography-page) query", async () => {
+    mockSupabaseTables({
+      public_trucks: {
+        data: [
+          makeTruckRow({ id: "ordinary", slug: "ordinary", name: "Zeta Ordinary" }),
+          makeTruckRow({
+            id: "live",
+            slug: "live",
+            name: "Live Truck",
+            is_open: true,
+            live_started_at: "2026-08-08T11:00:00.000Z",
+            live_expires_at: "2026-08-08T23:00:00.000Z",
+          }),
+        ],
+        error: null,
+      },
+      upcoming_stops: { data: [], error: null },
+    });
+
+    const trucks = await getRankedDirectoryTrucks(NOW, { stateSlug: "kentucky" });
+
+    expect(trucks.map((t) => t.id)).toEqual(["live", "ordinary"]);
   });
 });

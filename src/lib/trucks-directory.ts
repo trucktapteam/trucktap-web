@@ -71,12 +71,24 @@ export type DirectoryTruckCard = {
 };
 
 /**
- * Fetches every public-eligible truck plus each one's soonest real
- * upcoming stop, and assembles ready-to-render directory cards. Reuses
- * the same safe helpers the truck-profile page already relies on
- * (`getLiveStatus`, `getUpcomingStops`, `formatBasedNearLocation`) rather
- * than reimplementing any of that logic — the directory's notion of
- * "live" and "has a real upcoming stop" is exactly the profile page's.
+ * Narrows a directory query to one state or one city — the only two shapes
+ * `/state/[stateSlug]` and `/city/[citySlug]` need. Filters on
+ * `home_state_slug`/`home_city_slug` only (the columns the geography
+ * backfill populated from `service_area`); nothing about "live" or
+ * "upcoming" ever factors into which trucks a geography page lists, only
+ * where they're based.
+ */
+export type DirectoryFilter = { stateSlug: string } | { citySlug: string };
+
+/**
+ * Fetches every public-eligible truck (optionally narrowed to one state or
+ * city via `filter`) plus each one's soonest real upcoming stop, and
+ * assembles ready-to-render directory cards. Reuses the same safe helpers
+ * the truck-profile page already relies on (`getLiveStatus`,
+ * `getUpcomingStops`, `formatBasedNearLocation`) rather than reimplementing
+ * any of that logic — the directory's notion of "live" and "has a real
+ * upcoming stop" is exactly the profile page's, and identical whether this
+ * is `/trucks`, a state page, or a city page.
  *
  * Deliberately never queries `locations` (exact live coordinates): that
  * table is only ever exposed on a truck's own profile page, server-
@@ -86,13 +98,14 @@ export type DirectoryTruckCard = {
  * sensitive — so "current public location" here is the same sanitized
  * `service_area` text shown everywhere else, live or not.
  */
-export async function getDirectoryTrucks(now: Date = new Date()): Promise<DirectoryTruckCard[]> {
+export async function getDirectoryTrucks(now: Date = new Date(), filter?: DirectoryFilter): Promise<DirectoryTruckCard[]> {
   const supabase = createSupabaseServerClient();
 
-  const { data: truckRows, error: trucksError } = await supabase
-    .from("public_trucks")
-    .select(DIRECTORY_COLUMNS)
-    .returns<DirectoryTruckRow[]>();
+  let truckQuery = supabase.from("public_trucks").select(DIRECTORY_COLUMNS);
+  if (filter && "stateSlug" in filter) truckQuery = truckQuery.eq("home_state_slug", filter.stateSlug);
+  if (filter && "citySlug" in filter) truckQuery = truckQuery.eq("home_city_slug", filter.citySlug);
+
+  const { data: truckRows, error: trucksError } = await truckQuery.returns<DirectoryTruckRow[]>();
 
   if (trucksError) throw new Error(`Failed to load trucks for directory: ${trucksError.message}`);
 
@@ -195,7 +208,7 @@ export function rankDirectoryTrucks(trucks: DirectoryTruckCard[]): DirectoryTruc
   });
 }
 
-/** Convenience entry point the `/trucks` page actually calls: fetch, then rank. */
-export async function getRankedDirectoryTrucks(now: Date = new Date()): Promise<DirectoryTruckCard[]> {
-  return rankDirectoryTrucks(await getDirectoryTrucks(now));
+/** Convenience entry point `/trucks`, `/state/[stateSlug]`, and `/city/[citySlug]` all call: fetch (optionally filtered), then rank — same ranking regardless of filter. */
+export async function getRankedDirectoryTrucks(now: Date = new Date(), filter?: DirectoryFilter): Promise<DirectoryTruckCard[]> {
+  return rankDirectoryTrucks(await getDirectoryTrucks(now, filter));
 }

@@ -90,6 +90,21 @@ export function toHomeGeographySlugs(geography: HomeGeography): { citySlug: stri
   };
 }
 
+/**
+ * Recovers a human-readable title from a hyphenated slug, e.g.
+ * `"west-virginia"` -> `"West Virginia"`. Used for state display names on
+ * geography pages: `home_state_slug` is exactly `slugify(full state
+ * name)` (see `toHomeGeographySlugs`), so title-casing it back is enough —
+ * no separate slug-to-name lookup table to keep in sync.
+ */
+export function titleCaseSlug(slug: string): string {
+  return slug
+    .split("-")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
 const STREET_SUFFIXES = new Set([
   "st", "street", "rd", "road", "ave", "avenue", "blvd", "boulevard", "dr", "drive",
   "ln", "lane", "way", "hwy", "highway", "pkwy", "parkway", "cir", "circle",

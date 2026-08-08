@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveHomeGeography, formatBasedNearLocation, toHomeGeographySlugs } from "./location";
+import { deriveHomeGeography, formatBasedNearLocation, titleCaseSlug, toHomeGeographySlugs } from "./location";
 
 describe("formatBasedNearLocation", () => {
   it("reduces a full street address (comma-separated, full state name) to city/state", () => {
@@ -108,5 +108,16 @@ describe("toHomeGeographySlugs", () => {
       stateSlug: "indiana",
     });
     expect(toHomeGeographySlugs({ city: "Anywhere", state: "WV" }).stateSlug).toBe("west-virginia");
+  });
+});
+
+describe("titleCaseSlug", () => {
+  it("recovers a single-word state name", () => {
+    expect(titleCaseSlug("kentucky")).toBe("Kentucky");
+  });
+
+  it("recovers a multi-word state name", () => {
+    expect(titleCaseSlug("west-virginia")).toBe("West Virginia");
+    expect(titleCaseSlug("new-hampshire")).toBe("New Hampshire");
   });
 });

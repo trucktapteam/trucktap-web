@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 import { getPublicTruckSitemapEntries } from "@/lib/truck-data";
+import { getGeographySummaries, qualifyingCities, qualifyingStates } from "@/lib/geography";
 
 // Same reasoning as the homepage's own `revalidate` (src/app/page.tsx):
 // truck slugs change as trucks are added, so this can't be a one-time,
@@ -40,5 +41,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error("Sitemap truck query failed, serving static-pages-only sitemap:", error);
   }
 
-  return [...staticPages, ...truckEntries];
+  let geographyEntries: MetadataRoute.Sitemap = [];
+  try {
+    // Enumerated dynamically from home_state_slug/home_city_slug, at the
+    // same STATE_MIN_TRUCKS/CITY_MIN_TRUCKS threshold the pages themselves
+    // enforce (notFound() below it) — a slug never appears here without a
+    // real page behind it, and a newly-qualifying place appears here
+    // automatically the next time the sitemap regenerates, no code change.
+    const summaries = await getGeographySummaries();
+    geographyEntries = [
+      ...qualifyingStates(summaries).map((state) => ({
+        url: `${SITE_URL}/state/${state.stateSlug}`,
+        lastModified: new Date(),
+        changeFrequency: "daily" as const,
+        priority: 0.8,
+      })),
+      ...qualifyingCities(summaries).map((city) => ({
+        url: `${SITE_URL}/city/${city.citySlug}`,
+        lastModified: new Date(),
+        changeFrequency: "daily" as const,
+        priority: 0.75,
+      })),
+    ];
+  } catch (error) {
+    console.error("Sitemap geography query failed, omitting state/city pages:", error);
+  }
+
+  return [...staticPages, ...truckEntries, ...geographyEntries];
 }
