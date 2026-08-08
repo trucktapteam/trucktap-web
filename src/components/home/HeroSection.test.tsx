@@ -3,10 +3,18 @@ import { render, screen } from "@testing-library/react";
 import { HeroSection } from "./HeroSection";
 
 describe("HeroSection", () => {
-  it("links the primary 'Find Food Trucks Near You' CTA to the /trucks discovery page", () => {
+  it("links the primary 'See food trucks live now' CTA to the /trucks discovery page", () => {
     render(<HeroSection />);
 
-    expect(screen.getByRole("link", { name: "Find Food Trucks Near You" })).toHaveAttribute("href", "/trucks");
+    expect(screen.getByRole("link", { name: "See food trucks live now" })).toHaveAttribute("href", "/trucks");
+  });
+
+  it("shows the supporting line under the primary CTA", () => {
+    render(<HeroSection />);
+
+    expect(
+      screen.getByText("Live locations, upcoming stops & truck profiles — right here on the web.")
+    ).toBeInTheDocument();
   });
 
   it("keeps the App Store and Google Play links", () => {

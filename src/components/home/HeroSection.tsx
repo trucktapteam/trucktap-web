@@ -38,11 +38,14 @@ export function HeroSection() {
                   main job before "download the app" or "I'm an owner" do. */}
               <Link
                 href="/trucks"
-                className="inline-flex min-h-16 items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-b from-[#ff7a1a] to-brand px-7 py-4 text-lg font-black text-white shadow-[0_22px_50px_rgba(255,107,0,0.55),0_0_0_6px_rgba(255,107,0,0.16)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_28px_60px_rgba(255,107,0,0.65),0_0_0_8px_rgba(255,107,0,0.22)] active:translate-y-0 sm:min-h-[72px] sm:px-10 sm:py-5 sm:text-xl lg:min-h-20 lg:px-12 lg:py-6 lg:text-2xl"
+                className="inline-flex min-h-16 items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-b from-[#ff7a1a] to-brand px-7 py-4 text-lg font-black text-white uppercase shadow-[0_22px_50px_rgba(255,107,0,0.55),0_0_0_6px_rgba(255,107,0,0.16)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_28px_60px_rgba(255,107,0,0.65),0_0_0_8px_rgba(255,107,0,0.22)] active:translate-y-0 sm:min-h-[72px] sm:px-10 sm:py-5 sm:text-xl lg:min-h-20 lg:px-12 lg:py-6 lg:text-2xl"
               >
-                Find Food Trucks Near You
+                See food trucks live now
                 <ArrowIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </Link>
+              <p className="mt-3 max-w-[420px] text-sm font-semibold text-white/70">
+                Live locations, upcoming stops &amp; truck profiles — right here on the web.
+              </p>
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3.5" aria-label="App download links">
