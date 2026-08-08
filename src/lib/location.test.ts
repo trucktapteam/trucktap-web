@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBasedNearLocation } from "./location";
+import { deriveHomeGeography, formatBasedNearLocation, toHomeGeographySlugs } from "./location";
 
 describe("formatBasedNearLocation", () => {
   it("reduces a full street address (comma-separated, full state name) to city/state", () => {
@@ -63,5 +63,50 @@ describe("formatBasedNearLocation", () => {
   it("returns null when there is no service_area at all", () => {
     expect(formatBasedNearLocation(null)).toBeNull();
     expect(formatBasedNearLocation(undefined)).toBeNull();
+  });
+});
+
+describe("deriveHomeGeography", () => {
+  it("returns a { city, state } pair for a parseable address", () => {
+    expect(deriveHomeGeography("58, Ernest R Kouma Blvd, Radcliff, KY")).toEqual({
+      city: "Radcliff",
+      state: "KY",
+    });
+  });
+
+  it("is the same underlying parse formatBasedNearLocation formats — one implementation, not two", () => {
+    const geography = deriveHomeGeography("1850, Ring Road, Elizabethtown, Kentucky");
+    expect(geography).toEqual({ city: "Elizabethtown", state: "KY" });
+    expect(formatBasedNearLocation("1850, Ring Road, Elizabethtown, Kentucky")).toBe(
+      `${geography!.city}, ${geography!.state}`
+    );
+  });
+
+  it("fails closed the same way formatBasedNearLocation does", () => {
+    expect(deriveHomeGeography("Warren County and surrounding areas")).toBeNull();
+    expect(deriveHomeGeography("")).toBeNull();
+    expect(deriveHomeGeography(null)).toBeNull();
+  });
+});
+
+describe("toHomeGeographySlugs", () => {
+  it("builds a state-qualified city slug and a full-name state slug", () => {
+    expect(toHomeGeographySlugs({ city: "Elizabethtown", state: "KY" })).toEqual({
+      citySlug: "elizabethtown-ky",
+      stateSlug: "kentucky",
+    });
+  });
+
+  it("disambiguates same-named cities in different states via the city slug's state suffix", () => {
+    expect(toHomeGeographySlugs({ city: "Georgetown", state: "KY" }).citySlug).toBe("georgetown-ky");
+    expect(toHomeGeographySlugs({ city: "Georgetown", state: "TX" }).citySlug).toBe("georgetown-tx");
+  });
+
+  it("slugifies multi-word cities and states", () => {
+    expect(toHomeGeographySlugs({ city: "New Albany", state: "IN" })).toEqual({
+      citySlug: "new-albany-in",
+      stateSlug: "indiana",
+    });
+    expect(toHomeGeographySlugs({ city: "Anywhere", state: "WV" }).stateSlug).toBe("west-virginia");
   });
 });
