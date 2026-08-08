@@ -6,7 +6,6 @@ import Link from "next/link";
 import { FACEBOOK_URL } from "@/lib/home-data";
 
 const NAV_LINKS = [
-  { href: "/trucks", label: "Find Trucks" },
   { href: "#why", label: "Why" },
   { href: "#how", label: "How it works" },
   { href: "#screens", label: "Screens" },
@@ -14,6 +13,14 @@ const NAV_LINKS = [
   { href: "#owners", label: "Owners" },
   { href: "#download", label: "Download" },
 ];
+
+// Styled as its own small pill rather than a plain text link, alongside the
+// homepage hero's much larger "Find Food Trucks Near You" CTA — a step up
+// from the other nav items (this is the header's primary action), but
+// deliberately smaller/quieter than the hero button so the hierarchy holds
+// even when both are on screen together (e.g. scrolled partway down).
+const FIND_TRUCKS_PILL_CLASS =
+  "inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-sm font-black text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-brand-dark hover:shadow-md active:translate-y-0";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -36,6 +43,9 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-5 text-sm font-extrabold text-navy/70 lg:flex" aria-label="Primary">
+          <Link href="/trucks" className={FIND_TRUCKS_PILL_CLASS}>
+            Find Trucks
+          </Link>
           {NAV_LINKS.map((l) => (
             <a key={l.href} href={l.href} className="transition duration-200 hover:-translate-y-0.5 hover:text-brand-dark">
               {l.label}
@@ -67,6 +77,9 @@ export function SiteHeader() {
       {open && (
         <nav id="mobile-nav" className="border-t border-navy/8 px-4 pb-5 lg:hidden" aria-label="Primary">
           <div className="flex flex-col gap-1 pt-3 text-sm font-extrabold text-navy/80">
+            <Link href="/trucks" onClick={() => setOpen(false)} className={`mb-1 w-fit ${FIND_TRUCKS_PILL_CLASS}`}>
+              Find Trucks
+            </Link>
             {NAV_LINKS.map((l) => (
               <a
                 key={l.href}

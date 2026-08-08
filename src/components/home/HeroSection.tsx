@@ -29,17 +29,23 @@ export function HeroSection() {
               favorites, and stop chasing stale posts across the internet.
             </p>
 
-            <div className="mt-6">
+            <div className="mt-7">
+              {/* The primary discovery action, now that /trucks is live: this
+                  is deliberately the biggest, loudest thing in the hero — a
+                  bigger box, a stronger orange (gradient + a glow ring on top
+                  of the usual drop shadow), and bigger type than every other
+                  CTA on the page, so "find a truck" reads as the homepage's
+                  main job before "download the app" or "I'm an owner" do. */}
               <Link
                 href="/trucks"
-                className="inline-flex min-h-[56px] items-center justify-center gap-2 rounded-2xl bg-brand px-7 text-base font-black text-white shadow-[0_15px_30px_rgba(255,107,0,0.32)] transition duration-200 hover:-translate-y-1 hover:bg-brand-dark active:translate-y-0"
+                className="inline-flex min-h-16 items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-b from-[#ff7a1a] to-brand px-7 py-4 text-lg font-black text-white shadow-[0_22px_50px_rgba(255,107,0,0.55),0_0_0_6px_rgba(255,107,0,0.16)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_28px_60px_rgba(255,107,0,0.65),0_0_0_8px_rgba(255,107,0,0.22)] active:translate-y-0 sm:min-h-[72px] sm:px-10 sm:py-5 sm:text-xl lg:min-h-20 lg:px-12 lg:py-6 lg:text-2xl"
               >
-                Find Food Trucks
-                <ArrowIcon />
+                Find Food Trucks Near You
+                <ArrowIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </Link>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-3.5" aria-label="App download links">
+            <div className="mt-5 flex flex-wrap gap-3.5" aria-label="App download links">
               <a
                 href={APP_STORE_URL}
                 target="_blank"
@@ -72,16 +78,20 @@ export function HeroSection() {
               </a>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-3">
+            {/* Demoted a step further now that "Find Food Trucks Near You"
+                is the loud primary action and the store badges above are
+                the app download itself — these are just in-page jumps to
+                more detail, so they read as quiet, secondary links now. */}
+            <div className="mt-4 flex flex-wrap gap-2.5">
               <a
                 href="#screens"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-brand px-6 font-black text-white shadow-[0_15px_30px_rgba(255,107,0,0.28)] transition duration-200 hover:-translate-y-1 hover:bg-brand-dark active:translate-y-0"
+                className="inline-flex min-h-10 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-4 text-sm font-bold text-white/85 transition duration-200 hover:-translate-y-0.5 hover:border-white/35 hover:bg-white/10 active:translate-y-0"
               >
                 See the app
               </a>
               <a
                 href="#owners"
-                className="inline-flex min-h-[52px] items-center justify-center rounded-2xl bg-white px-6 font-black text-navy transition duration-200 hover:-translate-y-1 active:translate-y-0"
+                className="inline-flex min-h-10 items-center justify-center rounded-xl px-4 text-sm font-bold text-white/60 transition duration-200 hover:-translate-y-0.5 hover:text-white/90 active:translate-y-0"
               >
                 For truck owners
               </a>
@@ -122,9 +132,9 @@ export function HeroSection() {
   );
 }
 
-function ArrowIcon() {
+function ArrowIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="h-4 w-4">
+    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className={className}>
       <path
         fillRule="evenodd"
         d="M3 10a.75.75 0 0 1 .75-.75h10.638L11.29 6.16a.75.75 0 1 1 1.02-1.1l5 4.25a.75.75 0 0 1 0 1.18l-5 4.25a.75.75 0 1 1-1.02-1.1l3.098-2.59H3.75A.75.75 0 0 1 3 10Z"
