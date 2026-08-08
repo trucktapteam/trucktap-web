@@ -45,6 +45,7 @@ describe("sitemap", () => {
     expect(entries.map((entry) => entry.url)).toEqual([
       "https://gettrucktap.com",
       "https://gettrucktap.com/trucks",
+      "https://gettrucktap.com/privacy",
       "https://gettrucktap.com/truck/papa-pasta",
       "https://gettrucktap.com/truck/el-taco-rico",
     ]);
@@ -74,6 +75,7 @@ describe("sitemap", () => {
     expect(entries.map((entry) => entry.url)).toEqual([
       "https://gettrucktap.com",
       "https://gettrucktap.com/trucks",
+      "https://gettrucktap.com/privacy",
     ]);
   });
 
@@ -86,6 +88,7 @@ describe("sitemap", () => {
     expect(entries.map((entry) => entry.url)).toEqual([
       "https://gettrucktap.com",
       "https://gettrucktap.com/trucks",
+      "https://gettrucktap.com/privacy",
     ]);
   });
 });
