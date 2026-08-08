@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { SITE_URL } from "@/lib/site";
 import { SiteHeader } from "@/components/home/SiteHeader";
 import { SiteFooter } from "@/components/home/SiteFooter";
 import { HeroSection } from "@/components/home/HeroSection";
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
     title: "TruckTap | Find Food Trucks That Are Actually Open",
     description: "Real food trucks. Real locations. Less guessing, more eating.",
     type: "website",
-    url: "https://gettrucktap.com",
+    url: SITE_URL,
   },
 };
 

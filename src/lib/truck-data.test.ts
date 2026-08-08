@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { getTruckBySlug, resolveTruckForRoute, toMenuImageUrls } from "./truck-data";
+import {
+  getPublicTruckSitemapEntries,
+  getTruckBySlug,
+  resolveTruckForRoute,
+  toMenuImageUrls,
+} from "./truck-data";
 import { createSupabaseServerClient } from "./supabase/server";
 
 vi.mock("./supabase/server", () => ({
@@ -223,5 +228,39 @@ describe("getTruckBySlug", () => {
     const truck = await getTruckBySlug("papa-pasta");
 
     expect(truck?.name).toBe("Papa Pasta");
+  });
+});
+
+describe("getPublicTruckSitemapEntries", () => {
+  it("returns slug + updated_at for every row public_trucks exposes", async () => {
+    mockSupabaseTables({
+      public_trucks: () => ({
+        data: [{ slug: "papa-pasta", updated_at: "2026-08-01T00:00:00.000Z" }],
+        error: null,
+      }),
+    });
+
+    expect(await getPublicTruckSitemapEntries()).toEqual([
+      { slug: "papa-pasta", updated_at: "2026-08-01T00:00:00.000Z" },
+    ]);
+  });
+
+  it("queries public_trucks only — never the unrestricted base trucks table", async () => {
+    const { from } = mockSupabaseTables({
+      public_trucks: () => ({ data: [], error: null }),
+    });
+
+    await getPublicTruckSitemapEntries();
+
+    expect(from).toHaveBeenCalledWith("public_trucks");
+    expect(from).not.toHaveBeenCalledWith("trucks");
+  });
+
+  it("throws when the query fails, rather than silently publishing an empty sitemap", async () => {
+    mockSupabaseTables({
+      public_trucks: () => ({ data: null, error: { message: "connection refused" } }),
+    });
+
+    await expect(getPublicTruckSitemapEntries()).rejects.toThrow("connection refused");
   });
 });

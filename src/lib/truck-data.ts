@@ -388,3 +388,27 @@ export async function resolveTruckForRoute(param: string): Promise<TruckRouteRes
 
   return { truck: byId, redirectToSlug: byId.slug };
 }
+
+export type PublicTruckSitemapEntry = { slug: string; updated_at: string };
+
+/**
+ * Slugs (+ last-updated timestamps) for every truck currently eligible
+ * for the sitemap. Queries only `public_trucks` — the same column-curated,
+ * row-filtered view every other public lookup on this site uses — so
+ * archived/test/non-public trucks are excluded the same way they are
+ * everywhere else, not via a second, separate filter here. Throws on
+ * query failure so the sitemap route can decide how to degrade, rather
+ * than silently publishing an empty or stale sitemap.
+ */
+export async function getPublicTruckSitemapEntries(): Promise<PublicTruckSitemapEntry[]> {
+  const supabase = createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("public_trucks")
+    .select("slug, updated_at")
+    .returns<PublicTruckSitemapEntry[]>();
+
+  if (error) throw new Error(`Failed to load truck slugs for sitemap: ${error.message}`);
+
+  return data ?? [];
+}

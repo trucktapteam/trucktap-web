@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { resolveTruckForRoute } from "@/lib/truck-data";
+import { SITE_URL } from "@/lib/site";
 import { TruckHero } from "@/components/truck/TruckHero";
 import { StatusBar } from "@/components/truck/StatusBar";
 import { QuickActions } from "@/components/truck/QuickActions";
@@ -55,7 +56,7 @@ export default async function TruckProfilePage({ params }: Props) {
   if (resolution.redirectToSlug) permanentRedirect(`/truck/${resolution.redirectToSlug}`);
 
   const { truck } = resolution;
-  const pageUrl = `https://trucktap-web.vercel.app/truck/${truck.slug}`;
+  const pageUrl = `${SITE_URL}/truck/${truck.slug}`;
 
   // Every Client Component below gets one of these explicitly narrowed
   // objects, never `truck` itself: Next.js serializes a Client Component's
