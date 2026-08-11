@@ -5,6 +5,7 @@ const supabaseStorageHostname = getSupabaseStorageHostname();
 
 const nextConfig: NextConfig = {
   images: {
+    minimumCacheTTL: 2678400,
     remotePatterns: supabaseStorageHostname
       ? [
           {
