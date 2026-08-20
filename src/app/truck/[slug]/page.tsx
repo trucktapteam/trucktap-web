@@ -15,6 +15,8 @@ import { ReviewsSection } from "@/components/truck/ReviewsSection";
 import { AppDownloadCta } from "@/components/truck/AppDownloadCta";
 import { TruckQrPoster } from "@/components/truck/TruckQrPoster";
 import { TrustFooter } from "@/components/truck/TrustFooter";
+import { TruckProfileTopBar } from "@/components/truck/TruckProfileTopBar";
+import { DiscoverTrucksCta } from "@/components/truck/DiscoverTrucksCta";
 import { StructuredData } from "@/components/truck/StructuredData";
 import { Reveal } from "@/components/truck/Reveal";
 import {
@@ -79,6 +81,7 @@ export default async function TruckProfilePage({ params }: Props) {
   return (
     <main className="flex-1 pb-20">
       <StructuredData truck={truck} url={pageUrl} />
+      <TruckProfileTopBar />
       <TruckHero truck={truckHeroInfo} />
 
       <div className="mx-auto max-w-6xl px-4 pt-10 lg:px-6">
@@ -128,6 +131,13 @@ export default async function TruckProfilePage({ params }: Props) {
             </Reveal>
             <Reveal>
               <ReviewsSection truck={truck} />
+            </Reveal>
+            {/* Discovery before download, matching the intended funnel:
+                a visitor who came straight from Google and read this far
+                gets pointed at the rest of TruckTap's trucks before the
+                app pitch, not instead of it. */}
+            <Reveal>
+              <DiscoverTrucksCta />
             </Reveal>
             <div className="lg:hidden">
               <AppDownloadCta />
