@@ -64,41 +64,62 @@ export function PlaceholderImage({
    * directly (e.g. `max-h-[90vh] max-w-[90vw]`) rather than a fixed box. */
   mode?: "fill" | "auto";
 }) {
-  const [failed, setFailed] = useState(false);
+  // `attempt` counts load tries for the *current* seed: 0 is the first
+  // (normal) request, 1 is the one bounded retry. A single transient
+  // failure - a dropped request, a cold cache slot that 404s once, a
+  // network blip while a page loads a dozen images at once - used to
+  // permanently commit this component instance to the gradient fallback
+  // for the rest of the page view, even though the exact same URL loads
+  // fine moments later (which is exactly what happens when the lightbox
+  // mounts a fresh instance of this same component and succeeds on its
+  // first try). One retry gives every image the same second chance the
+  // lightbox gets for free, without retrying forever.
+  const [attempt, setAttempt] = useState(0);
+  const [permanentlyFailed, setPermanentlyFailed] = useState(false);
+  const MAX_RETRIES = 1;
 
-  if (seed && isSupabaseStorageImageUrl(seed) && !failed) {
+  const handleError = () => {
+    if (attempt < MAX_RETRIES) {
+      // Bump `attempt` - both re-keys and re-sources the <Image> below, so
+      // React remounts a genuinely new <img> element (not a reused,
+      // already-errored one) requesting a URL the browser's HTTP cache and
+      // Vercel's Image Optimization cache have never seen, instead of
+      // re-fetching whatever got cached (or failed) the first time.
+      setAttempt((a) => a + 1);
+    } else {
+      // Retry exhausted - only now is this "permanently" failed, and only
+      // now does the parent get told, per onImageError's contract.
+      setPermanentlyFailed(true);
+      onImageError?.();
+    }
+  };
+
+  // Only the retry attempt needs a cache-busting suffix; the first attempt
+  // uses the seed exactly as given so a normal successful load isn't
+  // penalized with an unnecessary cache-cold request.
+  const retrySrc = attempt > 0 ? `${seed}${seed.includes("?") ? "&" : "?"}retry=${attempt}` : seed;
+
+  if (seed && isSupabaseStorageImageUrl(seed) && !permanentlyFailed) {
     const fitClass = fit === "contain" ? "object-contain" : "object-cover";
 
     if (mode === "auto") {
       return (
         <Image
-          src={seed}
+          key={attempt}
+          src={retrySrc}
           alt={label}
           width={1600}
           height={1600}
           sizes={sizes}
           className={`h-auto w-auto ${fitClass} ${className}`}
-          onError={() => {
-            setFailed(true);
-            onImageError?.();
-          }}
+          onError={handleError}
         />
       );
     }
 
     return (
       <div className={`relative isolate overflow-hidden ${className}`}>
-        <Image
-          src={seed}
-          alt={label}
-          fill
-          sizes={sizes}
-          className={fitClass}
-          onError={() => {
-            setFailed(true);
-            onImageError?.();
-          }}
-        />
+        <Image key={attempt} src={retrySrc} alt={label} fill sizes={sizes} className={fitClass} onError={handleError} />
       </div>
     );
   }
@@ -123,6 +144,18 @@ export function PlaceholderImage({
         className="pointer-events-none absolute inset-0"
         style={{ boxShadow: "inset 0 0 40px 6px rgba(0,0,0,0.35)" }}
       />
+      {/* `permanentlyFailed` (as opposed to a missing/mock seed) means a
+          real photo exists but couldn't be decoded even after one retry —
+          most often an iPhone HEIC/HEIF upload the browser can't render.
+          Surfacing that distinction keeps a broken upload from looking
+          identical to "no photo was ever added," which would otherwise
+          hide the problem from the owner and from anyone debugging it
+          indefinitely. */}
+      {permanentlyFailed && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/45 px-2 py-1 text-center text-[10px] font-medium leading-tight text-white/90 backdrop-blur-sm">
+          Photo unavailable
+        </div>
+      )}
     </div>
   );
 }

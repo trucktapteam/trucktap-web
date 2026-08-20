@@ -65,7 +65,16 @@ describe("TruckHero clickable hero image", () => {
 
     const trigger = screen.getByRole("button", { name: "Open full-size hero image for Smoky Wheels BBQ" });
     const img = trigger.querySelector("img");
+
+    // PlaceholderImage retries once before reporting a permanent failure to
+    // the parent — the first error alone must not collapse the trigger.
     fireEvent(img as HTMLImageElement, new Event("error"));
+    expect(screen.getByRole("button", { name: "Open full-size hero image for Smoky Wheels BBQ" })).toBeInTheDocument();
+
+    const retryImg = screen
+      .getByRole("button", { name: "Open full-size hero image for Smoky Wheels BBQ" })
+      .querySelector("img");
+    fireEvent(retryImg as HTMLImageElement, new Event("error"));
 
     expect(screen.queryByRole("button", { name: /Open full-size hero image/ })).not.toBeInTheDocument();
   });

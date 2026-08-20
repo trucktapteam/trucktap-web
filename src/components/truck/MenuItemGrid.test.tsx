@@ -36,7 +36,11 @@ describe("MenuItemGrid photos", () => {
     const img = thumbnail.querySelector("img");
     expect(img).not.toBeNull();
 
+    // PlaceholderImage retries once before giving up — the first failure
+    // alone must not collapse the row.
     fireEvent(img as HTMLImageElement, new Event("error"));
+    const retryImg = screen.getByRole("button", { name: "View photo of Brisket Plate" }).querySelector("img");
+    fireEvent(retryImg as HTMLImageElement, new Event("error"));
 
     expect(screen.queryByRole("button", { name: "View photo of Brisket Plate" })).not.toBeInTheDocument();
     // No decorative gradient placeholder took its place, and the rest of the row survives.
