@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type Ref } from "react";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import type { TruckQrPosterInfo } from "@/lib/truck-view-models";
@@ -57,13 +57,21 @@ export function PosterArtwork({
   truck,
   qrValue,
   qrSize,
+  posterRef,
 }: {
   truck: TruckQrPosterInfo;
   qrValue: string;
   qrSize: number;
+  /** Attached to the poster's own box (not a wrapping element) so a caller
+   * like PosterPreviewModal's download button can rasterize exactly the
+   * poster's content — no surrounding modal chrome. */
+  posterRef?: Ref<HTMLDivElement>;
 }) {
   return (
-    <div className="w-full overflow-hidden rounded-[1.75rem] bg-white shadow-[var(--shadow-pop)]">
+    <div
+      ref={posterRef}
+      className="w-full overflow-hidden rounded-[1.75rem] bg-white shadow-[var(--shadow-pop)]"
+    >
       <div className="h-3 w-full bg-brand" />
 
       <PlaceholderImage
