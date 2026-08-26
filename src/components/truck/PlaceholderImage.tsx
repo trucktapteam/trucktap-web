@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { isSupabaseStorageImageUrl } from "@/lib/allowed-image-hosts";
 
@@ -41,6 +41,7 @@ export function PlaceholderImage({
   fit = "cover",
   fallback = "gradient",
   onImageError,
+  onLoad,
   mode = "fill",
 }: {
   seed: string;
@@ -56,6 +57,14 @@ export function PlaceholderImage({
    * this component's own fallback — lets a caller with `fallback="hide"` also
    * collapse a wrapping element (e.g. an otherwise-empty click target). */
   onImageError?: () => void;
+  /** Fires exactly once per `seed` when this component reaches a terminal,
+   * paintable state for it: the real photo finished loading, or there's no
+   * real photo to wait for (missing/mock seed, or the retry was exhausted
+   * and the gradient fallback is showing instead). Lets a caller that needs
+   * to rasterize this component's own painted pixels (e.g. the QR poster
+   * export) wait for the correct image rather than whatever happened to be
+   * on screen already. */
+  onLoad?: () => void;
   /** "fill" (default) fills a sized parent — the usual case, everywhere a
    * slot has a fixed footprint (thumbnails, hero banners, cards). "auto" is
    * for viewers with no predetermined box (the lightbox): no wrapping
@@ -78,6 +87,28 @@ export function PlaceholderImage({
   const [permanentlyFailed, setPermanentlyFailed] = useState(false);
   const MAX_RETRIES = 1;
 
+  // A component instance can be reused across a `seed` change without
+  // unmounting — React reconciles by position/type, not by prop value, so
+  // a parent re-rendering with a different truck's seed keeps this same
+  // instance. Without this reset, a previous seed's exhausted-retry /
+  // permanent-failure state would wrongly carry over and force a perfectly
+  // good new photo into the gradient fallback.
+  useEffect(() => {
+    setAttempt(0);
+    setPermanentlyFailed(false);
+  }, [seed]);
+
+  const usingRealImage = Boolean(seed) && isSupabaseStorageImageUrl(seed) && !permanentlyFailed;
+
+  // Signals "resolved" (not necessarily "succeeded") for this seed: either
+  // there's no real photo to wait for (missing/mock seed) or the retry was
+  // exhausted and the gradient fallback is what's actually painted. A
+  // caller waiting to rasterize the real photo (onLoad, below) still gets
+  // told once this settles, so it never waits forever on a broken image.
+  useEffect(() => {
+    if (!usingRealImage) onLoad?.();
+  }, [seed, usingRealImage, onLoad]);
+
   const handleError = () => {
     if (attempt < MAX_RETRIES) {
       // Bump `attempt` - both re-keys and re-sources the <Image> below, so
@@ -99,7 +130,7 @@ export function PlaceholderImage({
   // penalized with an unnecessary cache-cold request.
   const retrySrc = attempt > 0 ? `${seed}${seed.includes("?") ? "&" : "?"}retry=${attempt}` : seed;
 
-  if (seed && isSupabaseStorageImageUrl(seed) && !permanentlyFailed) {
+  if (usingRealImage) {
     const fitClass = fit === "contain" ? "object-contain" : "object-cover";
 
     if (mode === "auto") {
@@ -112,6 +143,7 @@ export function PlaceholderImage({
           height={1600}
           sizes={sizes}
           className={`h-auto w-auto ${fitClass} ${className}`}
+          onLoad={onLoad}
           onError={handleError}
         />
       );
@@ -119,7 +151,16 @@ export function PlaceholderImage({
 
     return (
       <div className={`relative isolate overflow-hidden ${className}`}>
-        <Image key={attempt} src={retrySrc} alt={label} fill sizes={sizes} className={fitClass} onError={handleError} />
+        <Image
+          key={attempt}
+          src={retrySrc}
+          alt={label}
+          fill
+          sizes={sizes}
+          className={fitClass}
+          onLoad={onLoad}
+          onError={handleError}
+        />
       </div>
     );
   }

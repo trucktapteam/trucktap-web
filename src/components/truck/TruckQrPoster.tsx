@@ -17,7 +17,6 @@ import { PosterPreviewModal } from "./PosterPreviewModal";
  * and hero/logo gracefully degrade via PlaceholderImage's own fallback.
  */
 export function TruckQrPoster({ truck, variant }: { truck: TruckQrPosterInfo; variant: "sidebar" | "mobile" }) {
-  const qrValue = getTruckQrPayload(truck.id);
   const qrSize = variant === "sidebar" ? 148 : 176;
 
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -40,10 +39,10 @@ export function TruckQrPoster({ truck, variant }: { truck: TruckQrPosterInfo; va
         aria-label={`View full-size QR poster for ${truck.name}`}
         className="block w-full rounded-[1.75rem] focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
       >
-        <PosterArtwork truck={truck} qrValue={qrValue} qrSize={qrSize} />
+        <PosterArtwork truck={truck} qrSize={qrSize} />
       </button>
 
-      {previewOpen && <PosterPreviewModal truck={truck} qrValue={qrValue} onClose={handleClose} />}
+      {previewOpen && <PosterPreviewModal truck={truck} onClose={handleClose} />}
     </div>
   );
 }
@@ -55,18 +54,29 @@ export function TruckQrPoster({ truck, variant }: { truck: TruckQrPosterInfo; va
  */
 export function PosterArtwork({
   truck,
-  qrValue,
   qrSize,
   posterRef,
+  onHeroLoad,
+  onLogoLoad,
 }: {
   truck: TruckQrPosterInfo;
-  qrValue: string;
   qrSize: number;
   /** Attached to the poster's own box (not a wrapping element) so a caller
    * like PosterPreviewModal's download button can rasterize exactly the
    * poster's content — no surrounding modal chrome. */
   posterRef?: Ref<HTMLDivElement>;
+  /** Fire once each when the hero photo / logo reach a paintable state
+   * (loaded, or resolved to the fallback) — lets a caller like the download
+   * button wait for this exact truck's images before rasterizing. */
+  onHeroLoad?: () => void;
+  onLogoLoad?: () => void;
 }) {
+  // Computed here, from the same `truck` object the name and images below
+  // read, rather than threaded in as a separately-passed prop — the QR
+  // destination can never end up describing a different truck than the
+  // name/photos next to it.
+  const qrValue = getTruckQrPayload(truck.id);
+
   return (
     <div
       ref={posterRef}
@@ -79,6 +89,7 @@ export function PosterArtwork({
         label={`${truck.name} hero photo`}
         className="h-32 w-full sm:h-36"
         sizes="340px"
+        onLoad={onHeroLoad}
       />
 
       <div className="flex flex-col items-center px-5 pt-0 pb-6 text-center">
@@ -87,6 +98,7 @@ export function PosterArtwork({
           label={`${truck.name} logo`}
           className="-mt-9 mb-3 h-[4.5rem] w-[4.5rem] shrink-0 rounded-2xl border-4 border-brand shadow-[var(--shadow-pop)]"
           sizes="72px"
+          onLoad={onLogoLoad}
         />
 
         <p className="text-balance text-xl leading-tight font-black tracking-tight text-ink uppercase">

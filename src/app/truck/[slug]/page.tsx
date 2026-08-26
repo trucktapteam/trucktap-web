@@ -108,7 +108,7 @@ export default async function TruckProfilePage({ params }: Props) {
               <AppDownloadCta compact />
             </Reveal>
             <Reveal delayMs={220}>
-              <TruckQrPoster truck={truckQrPosterInfo} variant="sidebar" />
+              <TruckQrPoster key={truck.id} truck={truckQrPosterInfo} variant="sidebar" />
             </Reveal>
           </aside>
 
@@ -142,7 +142,7 @@ export default async function TruckProfilePage({ params }: Props) {
             <div className="lg:hidden">
               <AppDownloadCta />
             </div>
-            <TruckQrPoster truck={truckQrPosterInfo} variant="mobile" />
+            <TruckQrPoster key={truck.id} truck={truckQrPosterInfo} variant="mobile" />
             <TrustFooter truck={truck} />
           </div>
         </div>

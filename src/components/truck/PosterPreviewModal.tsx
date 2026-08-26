@@ -25,17 +25,22 @@ import { PosterArtwork } from "./TruckQrPoster";
  */
 export function PosterPreviewModal({
   truck,
-  qrValue,
   onClose,
 }: {
   truck: TruckQrPosterInfo;
-  qrValue: string;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const posterRef = useRef<HTMLDivElement>(null);
   const [downloadState, setDownloadState] = useState<"idle" | "working" | "error">("idle");
+  // Both start false on every mount — and this modal is only ever mounted
+  // fresh for the truck it opened for (see TruckQrPoster's
+  // `{previewOpen && <PosterPreviewModal .../>}`) — so there's no stale
+  // "ready" state to inherit from a previous truck's poster.
+  const [heroReady, setHeroReady] = useState(false);
+  const [logoReady, setLogoReady] = useState(false);
+  const imagesReady = heroReady && logoReady;
 
   useEffect(() => {
     closeButtonRef.current?.focus();
@@ -45,7 +50,7 @@ export function PosterPreviewModal({
   useDialogKeyTrap({ dialogRef, onClose });
 
   async function handleDownload() {
-    if (!posterRef.current || downloadState === "working") return;
+    if (!posterRef.current || !imagesReady || downloadState === "working") return;
     setDownloadState("working");
     try {
       await downloadPosterAsPng(posterRef.current, posterFileName(truck.name));
@@ -77,17 +82,23 @@ export function PosterPreviewModal({
       </button>
 
       <div className="w-full max-w-sm">
-        <PosterArtwork truck={truck} qrValue={qrValue} qrSize={200} posterRef={posterRef} />
+        <PosterArtwork
+          truck={truck}
+          qrSize={200}
+          posterRef={posterRef}
+          onHeroLoad={() => setHeroReady(true)}
+          onLogoLoad={() => setLogoReady(true)}
+        />
 
         <div className="mt-5 flex flex-col items-center gap-2">
           <button
             type="button"
             onClick={handleDownload}
-            disabled={downloadState === "working"}
+            disabled={!imagesReady || downloadState === "working"}
             className="inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-ink shadow-[var(--shadow-pop)] transition duration-200 hover:-translate-y-0.5 hover:text-brand-dark hover:shadow-md active:translate-y-0 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-70"
           >
             <DownloadIcon />
-            {downloadState === "working" ? "Preparing…" : "Download Poster"}
+            {downloadState === "working" ? "Preparing…" : imagesReady ? "Download Poster" : "Loading poster…"}
           </button>
           {downloadState === "error" && (
             <p className="text-xs font-medium text-white/80" role="alert">

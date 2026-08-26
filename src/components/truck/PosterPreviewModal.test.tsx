@@ -1,7 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { makeTruck } from "@/lib/test-fixtures";
-import { getTruckQrPayload } from "@/lib/truck-share";
 import { PosterPreviewModal } from "./PosterPreviewModal";
 
 const toPngMock = vi.fn();
@@ -24,7 +23,7 @@ describe("PosterPreviewModal — Download Poster", () => {
     });
 
     const truck = makeTruck({ name: "Smoky Wheels BBQ" });
-    render(<PosterPreviewModal truck={truck} qrValue={getTruckQrPayload(truck.id)} onClose={() => {}} />);
+    render(<PosterPreviewModal truck={truck} onClose={() => {}} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Download Poster" }));
 
@@ -44,7 +43,7 @@ describe("PosterPreviewModal — Download Poster", () => {
     toPngMock.mockRejectedValue(new Error("canvas export failed"));
 
     const truck = makeTruck({ name: "Smoky Wheels BBQ" });
-    render(<PosterPreviewModal truck={truck} qrValue={getTruckQrPayload(truck.id)} onClose={() => {}} />);
+    render(<PosterPreviewModal truck={truck} onClose={() => {}} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Download Poster" }));
 

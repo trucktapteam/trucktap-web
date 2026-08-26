@@ -16,7 +16,17 @@ const MAX_PIXEL_RATIO = 8;
 export async function downloadPosterAsPng(node: HTMLElement, fileName: string): Promise<void> {
   const pixelRatio = Math.min(MAX_PIXEL_RATIO, Math.max(MIN_PIXEL_RATIO, TARGET_WIDTH_PX / node.offsetWidth));
 
-  const dataUrl = await toPng(node, { pixelRatio });
+  // html-to-image caches every fetched image in a module-level object keyed
+  // by URL — but with query params stripped by default. Every photo here
+  // (hero, logo) is served through Next.js's Image Optimization proxy at
+  // the single path `/_next/image`, with the *actual* source URL only in
+  // the `?url=` query string. With the default cache key, that collapses
+  // every optimized image on the entire site to the same key, so the first
+  // photo ever rasterized in this page's lifetime gets served back for
+  // every other truck's hero/logo from then on. `includeQueryParams: true`
+  // keys the cache by the full URL instead, so each truck's images stay
+  // distinct.
+  const dataUrl = await toPng(node, { pixelRatio, includeQueryParams: true });
 
   const link = document.createElement("a");
   link.href = dataUrl;
