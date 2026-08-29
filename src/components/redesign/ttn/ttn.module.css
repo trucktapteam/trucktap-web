@@ -1,0 +1,769 @@
+/*
+ * TTN-86 broadcast world — all of its period visual treatment lives here,
+ * isolated from globals.css: broadcast palette, condensed type, scanlines,
+ * CRT vignette/flicker, the Guide scroll, the ticker crawl, and the
+ * channel-change transition.
+ *
+ * Every continuous animation is a CSS transform/opacity loop (compositor
+ * friendly, no JS rAF). The prefers-reduced-motion block at the end stops
+ * all of them and leaves static, usable content.
+ */
+
+.frame {
+  --ttn-bg: #0a0e3d;
+  --ttn-blue-1: #141a6b;
+  --ttn-blue-2: #1d2596;
+  --ttn-blue-3: #2a33b6;
+  --ttn-row-a: #191f86;
+  --ttn-row-b: #232bab;
+  --ttn-cyan: #4fe9ff;
+  --ttn-amber: #ffb43c;
+  --ttn-red: #ff3131;
+  --ttn-ink: #eef0ff;
+  --ttn-ink-dim: #b9bff0;
+
+  position: relative;
+  isolation: isolate;
+  font-family: var(--font-oswald), "Arial Narrow", "Oswald", system-ui, sans-serif;
+  background: #000;
+}
+
+/* ---- Overscan / screen / pillarbox ---- */
+
+.overscan {
+  background: #000;
+  padding: clamp(8px, 2.2vw, 30px);
+}
+
+.screen {
+  position: relative;
+  width: 100%;
+  height: calc(100svh - clamp(16px, 4.4vw, 60px));
+  min-height: 560px;
+  margin-inline: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: var(--ttn-ink);
+  background:
+    radial-gradient(140% 120% at 50% 0%, var(--ttn-blue-2), var(--ttn-bg) 70%);
+  border-radius: 8px;
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.55);
+}
+
+/* 4:3-ish broadcast proportions once the viewport is wide enough that a
+   full-bleed screen would look nothing like a broadcast. Below this the
+   screen just fills the width (no tiny-TV letterboxing on phones). */
+@media (min-width: 900px) {
+  .screen {
+    max-width: calc((100svh - clamp(16px, 4.4vw, 60px)) * 1.34);
+  }
+}
+
+/* ---- Texture overlays ---- */
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.16) 0 1px,
+    rgba(0, 0, 0, 0) 1px 3px
+  );
+  mix-blend-mode: multiply;
+  animation: ttnScanlineDrift 9s linear infinite;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 31;
+  pointer-events: none;
+  background: radial-gradient(120% 120% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.5) 100%);
+}
+
+.flicker {
+  position: absolute;
+  inset: 0;
+  z-index: 32;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.02);
+  animation: ttnFlicker 6s steps(2, jump-none) infinite;
+}
+
+@keyframes ttnScanlineDrift {
+  to {
+    transform: translateY(3px);
+  }
+}
+@keyframes ttnFlicker {
+  0%, 92%, 100% { opacity: 0; }
+  93% { opacity: 0.5; }
+  95% { opacity: 0.1; }
+  97% { opacity: 0.35; }
+}
+
+/* ---- Masthead ---- */
+
+.masthead {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: clamp(0.7rem, 2vw, 1.3rem) clamp(0.8rem, 2.6vw, 1.6rem) 0;
+}
+@media (min-width: 620px) {
+  .masthead {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  line-height: 0.9;
+}
+.call {
+  font-size: clamp(1.7rem, 6.4vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 2px 0 0 rgba(255, 49, 49, 0.55), -2px 0 0 rgba(79, 233, 255, 0.55);
+}
+.call span {
+  color: var(--ttn-amber);
+}
+.network {
+  margin-top: 0.15rem;
+  font-size: clamp(0.55rem, 1.7vw, 0.9rem);
+  font-weight: 600;
+  letter-spacing: clamp(0.12em, 1vw, 0.32em);
+  white-space: nowrap;
+  color: var(--ttn-ink-dim);
+}
+
+.mastRight {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(0.6rem, 1.6vw, 1rem);
+}
+@media (min-width: 620px) {
+  .mastRight {
+    justify-content: flex-end;
+    text-align: right;
+  }
+}
+
+.liveBug {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--ttn-red);
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(0.7rem, 1.8vw, 0.95rem);
+  letter-spacing: 0.14em;
+  box-shadow: 0 0 18px rgba(255, 49, 49, 0.5);
+}
+.liveBugDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: #fff;
+  animation: ttnBugBlink 1.6s steps(1, jump-none) infinite;
+}
+@keyframes ttnBugBlink {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.15; }
+}
+.liveBugOff {
+  background: #2a2f66;
+  color: var(--ttn-ink-dim);
+  box-shadow: none;
+}
+
+.clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.clockRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+.clockTime {
+  font-size: clamp(1rem, 2.8vw, 1.7rem);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: var(--ttn-cyan);
+}
+.clockZone {
+  font-size: clamp(0.6rem, 1.3vw, 0.8rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--ttn-ink-dim);
+}
+.clockDate {
+  margin-top: 0.25rem;
+  font-size: clamp(0.6rem, 1.5vw, 0.85rem);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--ttn-ink-dim);
+}
+
+/* ---- Programming panel ---- */
+
+.programming {
+  position: relative;
+  z-index: 20;
+  margin: clamp(0.6rem, 2vw, 1.1rem) clamp(0.8rem, 2.6vw, 1.6rem) 0;
+  flex: 0 0 auto;
+  height: clamp(132px, 24vh, 210px);
+  border: 3px solid var(--ttn-blue-3);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.slate {
+  position: absolute;
+  inset: 0;
+}
+.slateLayer {
+  position: absolute;
+  inset: 0;
+}
+.slateLayerA {
+  animation: ttnSlateA 22s ease-in-out infinite;
+}
+.slateLayerB {
+  animation: ttnSlateB 22s ease-in-out infinite;
+}
+.slate:hover .slateLayer,
+.slate:focus-within .slateLayer {
+  animation-play-state: paused;
+}
+@keyframes ttnSlateA {
+  0%, 44% { opacity: 1; }
+  50%, 94% { opacity: 0; }
+  100% { opacity: 1; }
+}
+@keyframes ttnSlateB {
+  0%, 44% { opacity: 0; }
+  50%, 94% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.slateInner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.slateImageWrap {
+  position: relative;
+  width: 46%;
+  flex: none;
+  overflow: hidden;
+  background: #05071f;
+}
+.slateImage {
+  object-fit: cover;
+  filter: saturate(1.15) contrast(1.08);
+}
+.slateImageBleed {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  background: linear-gradient(100deg, transparent 60%, rgba(79, 233, 255, 0.16));
+  pointer-events: none;
+}
+.slateBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: clamp(0.7rem, 2.4vw, 1.4rem);
+  background: linear-gradient(180deg, var(--ttn-blue-1), var(--ttn-bg));
+}
+.slateKicker {
+  font-size: clamp(0.6rem, 1.6vw, 0.85rem);
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  color: var(--ttn-amber);
+}
+.slateTitle {
+  font-size: clamp(1.3rem, 3.8vw, 2.4rem);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.slateMeta {
+  font-size: clamp(0.7rem, 1.8vw, 1rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ttn-ink-dim);
+}
+.slateStationId {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  text-align: center;
+  background: linear-gradient(180deg, var(--ttn-blue-2), var(--ttn-bg));
+}
+.slateStationId .call {
+  font-size: clamp(2.4rem, 7vw, 4.5rem);
+}
+
+/* ---- The TruckTap Guide ---- */
+
+.guide {
+  position: relative;
+  z-index: 20;
+  margin: clamp(0.6rem, 2vw, 1.1rem) clamp(0.8rem, 2.6vw, 1.6rem) 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border: 3px solid var(--ttn-blue-3);
+}
+
+.guideHead {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.4rem clamp(0.6rem, 2vw, 1rem);
+  background: var(--ttn-amber);
+  color: #1a1200;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  font-size: clamp(0.7rem, 2vw, 1rem);
+  text-transform: uppercase;
+}
+.guideHeadNote {
+  display: none;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  opacity: 0.7;
+}
+@media (min-width: 700px) {
+  .guideHeadNote {
+    display: inline;
+  }
+}
+
+.guideViewport {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ttn-bg);
+}
+.guideTrack {
+  display: flex;
+  flex-direction: column;
+}
+.guideCopy {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+}
+.guideTrackAnimated {
+  animation: ttnGuideScroll linear infinite;
+}
+.guideViewport:hover .guideTrackAnimated,
+.guideViewport:focus-within .guideTrackAnimated {
+  animation-play-state: paused;
+}
+@keyframes ttnGuideScroll {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.guideEmpty {
+  padding: clamp(1rem, 4vw, 2rem);
+  text-align: center;
+  color: var(--ttn-ink-dim);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+/* ---- Guide row ---- */
+
+.row {
+  display: grid;
+  grid-template-columns: clamp(4.2rem, 16vw, 5.6rem) 1fr;
+  gap: clamp(0.5rem, 2vw, 1rem);
+  align-items: center;
+  padding: clamp(0.55rem, 1.8vw, 0.85rem) clamp(0.6rem, 2vw, 1rem);
+  min-height: 56px;
+  text-decoration: none;
+  color: var(--ttn-ink);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.35);
+}
+@media (min-width: 700px) {
+  .row {
+    grid-template-columns: 6rem 1fr minmax(9rem, 16rem);
+    min-height: 62px;
+  }
+}
+.row:nth-child(odd) {
+  background: var(--ttn-row-a);
+}
+.row:nth-child(even) {
+  background: var(--ttn-row-b);
+}
+.row[data-kind="live"] {
+  background: #241a5e;
+  border-left: 4px solid var(--ttn-cyan);
+  box-shadow: inset 0 0 30px rgba(79, 233, 255, 0.14);
+}
+.row:hover,
+.row:focus-visible {
+  outline: 2px solid var(--ttn-cyan);
+  outline-offset: -2px;
+}
+
+.rowTime {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--ttn-cyan);
+}
+.rowTimeMain {
+  font-size: clamp(0.95rem, 2.6vw, 1.35rem);
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.rowTimeZone {
+  margin-top: 0.15rem;
+  font-size: clamp(0.55rem, 1.3vw, 0.7rem);
+  letter-spacing: 0.14em;
+  color: var(--ttn-ink-dim);
+}
+.rowLiveTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--ttn-red);
+  font-size: clamp(0.7rem, 1.9vw, 0.95rem);
+  letter-spacing: 0.08em;
+}
+.rowLiveDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--ttn-red);
+  box-shadow: 0 0 10px var(--ttn-red);
+}
+
+.rowMain {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.rowName {
+  font-size: clamp(0.95rem, 2.7vw, 1.35rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rowMeta {
+  font-size: clamp(0.65rem, 1.7vw, 0.85rem);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ttn-ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rowNext {
+  display: none;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+  text-align: right;
+}
+@media (min-width: 700px) {
+  .rowNext {
+    display: flex;
+  }
+}
+.rowStatus {
+  font-size: clamp(0.7rem, 1.6vw, 0.9rem);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--ttn-amber);
+}
+.rowWhere {
+  font-size: clamp(0.62rem, 1.4vw, 0.8rem);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ttn-ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* On phones the status/where collapses under the name instead of a third column */
+.rowMobileNext {
+  margin-top: 0.15rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ttn-amber);
+}
+@media (min-width: 700px) {
+  .rowMobileNext {
+    display: none;
+  }
+}
+
+/* ---- Bottom bar: FIND ALL TRUCKS bug + ticker ---- */
+
+.bottomBar {
+  position: relative;
+  z-index: 20;
+  flex: 0 0 auto;
+  margin-top: clamp(0.5rem, 2vw, 1rem);
+  display: flex;
+  align-items: stretch;
+  border-top: 2px solid var(--ttn-blue-3);
+}
+
+.findBug {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 clamp(0.6rem, 2vw, 1rem);
+  background: var(--ttn-cyan);
+  color: #04121a;
+  font-weight: 700;
+  font-size: clamp(0.68rem, 1.8vw, 0.9rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.findBug:hover,
+.findBug:focus-visible {
+  background: #fff;
+}
+
+/* ---- Ticker ---- */
+
+.ticker {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: clamp(1.7rem, 5vw, 2.4rem);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: #05071f;
+  font-size: clamp(0.7rem, 1.8vw, 0.95rem);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--ttn-ink);
+  text-transform: uppercase;
+}
+.tickerTrack {
+  display: flex;
+  flex: none;
+  white-space: nowrap;
+  will-change: transform;
+  animation: ttnTicker 34s linear infinite;
+}
+.ticker:hover .tickerTrack,
+.ticker:focus-within .tickerTrack {
+  animation-play-state: paused;
+}
+.tickerTrack > span {
+  padding-inline: 1.5rem;
+}
+@keyframes ttnTicker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ---- Channel-change transition ---- */
+
+.transition {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #000;
+  color: var(--ttn-ink);
+  pointer-events: none;
+  transition: opacity 130ms linear;
+}
+.transition[data-phase="idle"],
+.transition[data-phase="done"] {
+  opacity: 0;
+  visibility: hidden;
+}
+.transition[data-phase="snap"],
+.transition[data-phase="tear"],
+.transition[data-phase="ident"],
+.transition[data-phase="ghost"] {
+  opacity: 1;
+  visibility: visible;
+}
+
+.transitionNoise {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  transition: opacity 80ms linear;
+}
+.transition[data-phase="snap"] .transitionNoise {
+  opacity: 0.5;
+}
+.transition[data-phase="tear"] .transitionNoise {
+  opacity: 0.22;
+}
+.transition[data-phase="ident"] .transitionNoise {
+  opacity: 0.12;
+}
+
+/* One horizontal sync tear that rips down the frame a single time */
+.transitionTear {
+  position: absolute;
+  left: -5%;
+  top: 0;
+  width: 110%;
+  height: 14%;
+  opacity: 0;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 255, 255, 0.9) 44%,
+    rgba(79, 233, 255, 0.55) 56%,
+    transparent
+  );
+  mix-blend-mode: screen;
+  transform: translateY(-120%);
+}
+.transition[data-phase="tear"] .transitionTear {
+  opacity: 1;
+  transform: translateY(760%);
+  transition: transform 120ms linear, opacity 60ms linear 90ms;
+}
+
+/* Large station-number flash */
+.transitionBig86 {
+  position: absolute;
+  font-size: clamp(4rem, 22vw, 11rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  transform: scale(1.12);
+  text-shadow: 4px 0 0 rgba(255, 49, 49, 0.7), -4px 0 0 rgba(79, 233, 255, 0.7);
+}
+.transition[data-phase="ident"] .transitionBig86 {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 50ms linear, transform 110ms ease-out;
+}
+.transition[data-phase="ghost"] .transitionBig86 {
+  opacity: 0;
+  transition: opacity 110ms linear;
+}
+
+/* Faint full call-sign ghost that settles vertically as the signal locks */
+.transitionIdent {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  opacity: 0;
+  transform: translateY(10px);
+}
+.transition[data-phase="ghost"] .transitionIdent {
+  opacity: 0.34;
+  transform: translateY(0);
+  transition: opacity 150ms linear, transform 150ms ease-out;
+}
+.transitionIdent .identCall {
+  font-size: clamp(2.6rem, 9vw, 5rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-shadow: 3px 0 0 rgba(255, 49, 49, 0.6), -3px 0 0 rgba(79, 233, 255, 0.6);
+}
+.transitionIdent .identName {
+  font-size: clamp(0.7rem, 2vw, 1rem);
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  color: var(--ttn-ink-dim);
+}
+
+/* ---- Reduced motion: stop everything continuous, keep content usable ---- */
+
+@media (prefers-reduced-motion: reduce) {
+  .scanlines,
+  .flicker,
+  .liveBugDot {
+    animation: none !important;
+  }
+  .flicker {
+    opacity: 0 !important;
+  }
+  .slateLayerA {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .slateLayerB {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+  .guideTrackAnimated {
+    animation: none !important;
+    transform: none !important;
+  }
+  .guideViewport {
+    overflow-y: auto;
+  }
+  .guideDuplicate {
+    display: none !important;
+  }
+  .tickerTrack {
+    animation: none !important;
+    transform: none !important;
+  }
+  .transition {
+    display: none !important;
+  }
+}
