@@ -33,9 +33,13 @@ export const viewport: Viewport = {
   themeColor: "#ff6b00",
 };
 
-// The live TTN-86 Guide and the hero's live signal must never be more than
-// a minute stale — same ISR cadence as /trucks (was 1h on the old homepage).
-export const revalidate = 60;
+// The live TTN-86 Guide and the hero's live signal must reflect reality at
+// request time. Under ISR, Vercel's stale-while-revalidate can serve an
+// arbitrarily old LIVE/ON AIR snapshot (the client BroadcastClock keeps
+// ticking, so the stale page still looks current), which disagreed with the
+// always-dynamic /truck/[slug] profiles. Render per request instead — same
+// stance as the internal /ttn86/newsroom page.
+export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const now = new Date();
