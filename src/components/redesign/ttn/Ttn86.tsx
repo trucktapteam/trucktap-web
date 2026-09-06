@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Oswald } from "next/font/google";
 import type { TtnGuide } from "@/lib/redesign/ttn-guide";
+import { pickBroadcastBreak } from "@/lib/redesign/commercial-break";
 import { BroadcastFrame } from "./BroadcastFrame";
 import { BroadcastClock } from "./BroadcastClock";
 import { ChannelTransition } from "./ChannelTransition";
-import { ProgrammingSlate } from "./ProgrammingSlate";
+import { ProgrammingPanel } from "./ProgrammingPanel";
 import { TruckTapGuide } from "./TruckTapGuide";
 import { Ticker } from "./Ticker";
 import styles from "./ttn.module.css";
@@ -32,9 +33,14 @@ const oswald = Oswald({
 export function Ttn86({ guide, serverNowIso }: { guide: TtnGuide; serverNowIso: string }) {
   const hasScheduled = guide.rows.some((row) => row.kind === "scheduled");
 
+  // Once per server render: is the top programming panel a commercial
+  // break this load, and if so which spot? null => the normal slate.
+  const commercial = pickBroadcastBreak();
+
   const tickerItems = [
     "TTN-86",
     "TRUCKTAP TELEVISION NETWORK",
+    commercial ? "WE'LL BE RIGHT BACK AFTER THIS" : "",
     ...guide.liveNames.map((name) => `${name} — NOW BROADCASTING LIVE`),
     hasScheduled ? "THE TRUCKTAP GUIDE — WHAT'S ON ACROSS THE NETWORK" : "",
     "FIND ALL TRUCKS AT TRUCKTAP",
@@ -62,7 +68,15 @@ export function Ttn86({ guide, serverNowIso }: { guide: TtnGuide; serverNowIso: 
           </div>
         </header>
 
-        <ProgrammingSlate slateA={guide.slateA} slateB={guide.slateB} />
+        {/* Normally the LIVE / NEXT ON TTN-86 slate. On a commercial-break
+            load it starts on the spot facade and, once the spot's YouTube
+            video actually ends, swaps itself back to this same slate data
+            client-side — no reload, Guide rows below untouched. */}
+        <ProgrammingPanel
+          commercial={commercial}
+          slateA={guide.slateA}
+          slateB={guide.slateB}
+        />
 
         <TruckTapGuide rows={guide.rows} />
 

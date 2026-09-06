@@ -331,6 +331,232 @@
   font-size: clamp(2.4rem, 7vw, 4.5rem);
 }
 
+/* ---- Programming panel: commercial-break variant ----
+   Same bordered panel as the normal slate, given over to one of our
+   YouTube spots on a minority of loads (see pickBroadcastBreak). Slightly
+   taller so the spot is watchable; the Guide below still fills the rest of
+   the screen and keeps scrolling. Audio is user-initiated: the poster is a
+   facade and the real player only mounts on the play click. */
+
+.programmingBreak {
+  height: clamp(190px, 32vh, 300px);
+  border-color: var(--ttn-red);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.4), 0 0 40px rgba(255, 49, 49, 0.18);
+  background: #05071f;
+}
+
+.breakFacade {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: #05071f;
+  color: var(--ttn-ink);
+  font: inherit;
+  cursor: pointer;
+}
+.breakFacade:focus-visible {
+  outline: 3px solid var(--ttn-cyan);
+  outline-offset: -3px;
+}
+
+/* The poster is texture, not a preview — dimmed, desaturated and softly
+   blurred (over-scaled so the blur doesn't bleed the panel edge) so every
+   rotation variant reads the same, as a paused spot behind the controls. */
+.breakPoster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.08);
+  filter: saturate(0.82) brightness(0.5) blur(2px);
+}
+
+.breakScan {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.2) 0 1px,
+    rgba(0, 0, 0, 0) 1px 3px
+  );
+  mix-blend-mode: multiply;
+  animation: ttnScanlineDrift 9s linear infinite;
+}
+
+.breakScrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(58% 64% at 50% 46%, rgba(5, 7, 31, 0.82), rgba(5, 7, 31, 0) 72%),
+    linear-gradient(180deg, rgba(10, 14, 61, 0.62), rgba(5, 7, 31, 0.2) 40%, rgba(5, 7, 31, 0.74));
+}
+
+.breakBug {
+  position: absolute;
+  top: clamp(0.5rem, 2vw, 0.9rem);
+  left: clamp(0.5rem, 2vw, 0.9rem);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  background: var(--ttn-red);
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(0.6rem, 1.7vw, 0.85rem);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  box-shadow: 0 0 16px rgba(255, 49, 49, 0.5);
+}
+.breakBugDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: #fff;
+  animation: ttnBugBlink 1.6s steps(1, jump-none) infinite;
+}
+
+.breakCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding-inline: 1rem;
+  text-align: center;
+}
+.breakDisc {
+  width: clamp(2.9rem, 9vw, 4.4rem);
+  height: clamp(2.9rem, 9vw, 4.4rem);
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--ttn-red);
+  color: #fff;
+  box-shadow: 0 0 28px rgba(255, 49, 49, 0.55);
+  transition: background-color 120ms linear, color 120ms linear;
+}
+.breakDisc svg {
+  width: 44%;
+  height: 44%;
+  margin-left: 8%;
+}
+.breakFacade:hover .breakDisc,
+.breakFacade:focus-visible .breakDisc {
+  background: #fff;
+  color: var(--ttn-red);
+}
+.breakPlayLabel {
+  font-size: clamp(0.62rem, 1.7vw, 0.82rem);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ttn-ink);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+}
+.breakTagline {
+  max-width: 40ch;
+  text-wrap: balance;
+  font-size: clamp(0.58rem, 1.5vw, 0.78rem);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ttn-ink-dim);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+}
+
+.breakFoot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(0.5rem, 2vw, 0.9rem);
+  background: linear-gradient(180deg, transparent, rgba(5, 7, 31, 0.9));
+}
+.breakStation {
+  flex: none;
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: 0.04em;
+  text-shadow: 2px 0 0 rgba(255, 49, 49, 0.55), -2px 0 0 rgba(79, 233, 255, 0.55);
+}
+.breakStation span {
+  color: var(--ttn-amber);
+}
+.breakTitle {
+  min-width: 0;
+  text-align: right;
+  font-size: clamp(0.72rem, 2vw, 1rem);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ttn-ink-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The YouTube IFrame API replaces its host node with an <iframe>; this
+   stage just pins that iframe to fill the panel. */
+.breakStage {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+.breakStage iframe {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0;
+}
+
+/* Fallback out to youtube.com for a visitor whose browser blocks the
+   embedded stream. Subtle, top-right, present in both the facade and
+   playing states; a sibling of the facade/iframe so it stays clickable. */
+.breakWatch {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.55rem;
+  border-bottom-left-radius: 4px;
+  background: rgba(5, 7, 31, 0.72);
+  color: var(--ttn-ink-dim);
+  font-size: clamp(0.5rem, 1.3vw, 0.66rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color 120ms linear, background-color 120ms linear;
+}
+.breakWatch:hover,
+.breakWatch:focus-visible {
+  color: #fff;
+  background: rgba(5, 7, 31, 0.92);
+  outline: none;
+}
+.breakWatch:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ttn-cyan);
+}
+
 /* ---- The TruckTap Guide ---- */
 
 .guide {
@@ -735,8 +961,13 @@
 @media (prefers-reduced-motion: reduce) {
   .scanlines,
   .flicker,
-  .liveBugDot {
+  .liveBugDot,
+  .breakScan,
+  .breakBugDot {
     animation: none !important;
+  }
+  .breakScan {
+    opacity: 0.5;
   }
   .flicker {
     opacity: 0 !important;
