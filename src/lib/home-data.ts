@@ -7,7 +7,7 @@
 
 // App Store / Google Play URLs live in lib/app-links.ts — the single
 // canonical source every download button on the site imports from.
-export const FACEBOOK_URL = "https://www.facebook.com/profile.php?id=61574337256977";
+export const FACEBOOK_URL = "https://www.facebook.com/TruckTap/";
 export const ANTHEM_YOUTUBE_WATCH_URL = "https://youtube.com/shorts/rpr4vHIFAHY?feature=share";
 export const ANTHEM_YOUTUBE_EMBED_URL = "https://www.youtube.com/embed/rpr4vHIFAHY";
 

@@ -18,6 +18,7 @@ describe("SiteFooter", () => {
     render(<SiteFooter />);
 
     const facebookLink = screen.getByRole("link", { name: "Facebook" });
+    expect(facebookLink).toHaveAttribute("href", "https://www.facebook.com/TruckTap/");
     expect(facebookLink).toHaveAttribute("target", "_blank");
     expect(facebookLink).toHaveAttribute("rel", "noopener noreferrer");
   });
