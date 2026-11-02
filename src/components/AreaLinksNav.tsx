@@ -3,8 +3,8 @@ import type { AreaLink, AreaLinks } from "@/lib/geography";
 
 const CHIP = {
   light:
-    "rounded-full border border-border bg-white px-3.5 py-1.5 text-sm font-semibold text-ink shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand hover:text-brand-dark",
-  dark: "rounded-full border border-white/20 px-3.5 py-1.5 text-sm font-semibold text-white/80 transition-colors duration-150 hover:border-[#ff6b00] hover:text-white",
+    "shrink-0 whitespace-nowrap rounded-full border border-border bg-white px-3.5 py-1.5 text-sm font-semibold text-ink shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand hover:text-brand-dark",
+  dark: "shrink-0 whitespace-nowrap rounded-full border border-white/20 px-3.5 py-1.5 text-sm font-semibold text-white/80 transition-colors duration-150 hover:border-[#ff6b00] hover:text-white",
 };
 
 function Chips({ links, tone }: { links: AreaLink[]; tone: keyof typeof CHIP }) {
@@ -36,7 +36,8 @@ export function AreaLinksNav({
       <p className={tone === "dark" ? "text-sm font-bold text-white/60" : "text-sm font-bold text-navy/60"}>
         Browse food trucks by area
       </p>
-      <div className="mt-2 flex flex-wrap gap-2">
+      {/* One swipeable row on phones so the links don't push content down; wraps from `sm` up. */}
+      <div className="mt-1 flex gap-2 overflow-x-auto py-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
         <Chips links={links.states} tone={tone} />
         <Chips links={links.cities} tone={tone} />
       </div>
