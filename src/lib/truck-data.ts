@@ -29,7 +29,7 @@ import type {
 const PUBLIC_TRUCK_COLUMNS =
   "id, slug, name, cuisine_type, description, bio, phone, website, hero_image, logo, " +
   "gallery_images, menu_images, menu_items, announcements, is_verified, is_open, " +
-  "service_area, facebook_url, instagram_url, tiktok_url, trust_badges, " +
+  "service_area, home_city_slug, home_state_slug, facebook_url, instagram_url, tiktok_url, trust_badges, " +
   "last_live_updated_at, live_started_at, live_expires_at, created_at, updated_at";
 
 type PublicTruckRow = {
@@ -50,6 +50,8 @@ type PublicTruckRow = {
   is_verified: boolean;
   is_open: boolean;
   service_area: string | null;
+  home_city_slug: string | null;
+  home_state_slug: string | null;
   facebook_url: string | null;
   instagram_url: string | null;
   tiktok_url: string | null;
@@ -307,6 +309,8 @@ async function hydrateTruck(supabase: Supabase, truckRow: PublicTruckRow): Promi
     is_verified: truckRow.is_verified,
     is_open: truckRow.is_open,
     service_area: truckRow.service_area,
+    home_city_slug: truckRow.home_city_slug,
+    home_state_slug: truckRow.home_state_slug,
     // Not yet exposed by public_trucks — see integration audit. Degrades
     // safely: every consumer already treats this as optional.
     operating_hours: null,

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { resolveTruckForRoute } from "@/lib/truck-data";
 import { SITE_URL } from "@/lib/site";
+import { getTruckAreaLinks } from "@/lib/geography";
 import { TruckHero } from "@/components/truck/TruckHero";
 import { StatusBar } from "@/components/truck/StatusBar";
 import { QuickActions } from "@/components/truck/QuickActions";
@@ -59,6 +60,7 @@ export default async function TruckProfilePage({ params }: Props) {
 
   const { truck } = resolution;
   const pageUrl = `${SITE_URL}/truck/${truck.slug}`;
+  const areaLinks = await getTruckAreaLinks(truck);
 
   // Every Client Component below gets one of these explicitly narrowed
   // objects, never `truck` itself: Next.js serializes a Client Component's
@@ -137,7 +139,7 @@ export default async function TruckProfilePage({ params }: Props) {
                 gets pointed at the rest of TruckTap's trucks before the
                 app pitch, not instead of it. */}
             <Reveal>
-              <DiscoverTrucksCta />
+              <DiscoverTrucksCta areaLinks={areaLinks} />
             </Reveal>
             <div className="lg:hidden">
               <AppDownloadCta />

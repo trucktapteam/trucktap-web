@@ -3,29 +3,31 @@ import { SITE_URL } from "@/lib/site";
 import { getPublicTruckSitemapEntries } from "@/lib/truck-data";
 import { getGeographySummaries, qualifyingCities, qualifyingStates } from "@/lib/geography";
 
-// Same reasoning as the homepage's own `revalidate` (src/app/page.tsx):
-// truck slugs change as trucks are added, so this can't be a one-time,
-// build-time-only list without going fully dynamic. ISR keeps it fresh
-// at most once an hour.
-export const revalidate = 3600;
+// Generated on every request, deliberately. With `revalidate = 3600` this file
+// never refreshed on Vercel: the Oct 14, 2026 deployment was still serving its
+// build-time sitemap 18 days later, from a cache entry about 2.9 days old. Under
+// `next start` the same setting did regenerate, so the difference is specific
+// to Vercel, and the sitemap only changed on deployment. Search engines fetch
+// this rarely, so the cost is small: one function run and two short queries.
+export const dynamic = "force-dynamic";
 
+// `lastModified` is only set where a real edit time exists (truck profiles).
+// Pages with no such record leave it out: stamping them with the current time
+// would claim a change on every fetch that never happened.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     {
       url: SITE_URL,
-      lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1,
     },
     {
       url: `${SITE_URL}/trucks`,
-      lastModified: new Date(),
       changeFrequency: "hourly",
       priority: 0.9,
     },
     {
       url: `${SITE_URL}/privacy`,
-      lastModified: new Date(),
       changeFrequency: "yearly",
       priority: 0.3,
     },
@@ -58,13 +60,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     geographyEntries = [
       ...qualifyingStates(summaries).map((state) => ({
         url: `${SITE_URL}/state/${state.stateSlug}`,
-        lastModified: new Date(),
         changeFrequency: "daily" as const,
         priority: 0.8,
       })),
       ...qualifyingCities(summaries).map((city) => ({
         url: `${SITE_URL}/city/${city.citySlug}`,
-        lastModified: new Date(),
         changeFrequency: "daily" as const,
         priority: 0.75,
       })),

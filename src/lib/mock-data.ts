@@ -109,6 +109,8 @@ export const mockTruck: Truck = {
   is_verified: true,
   is_open: true,
   service_area: "Elizabethtown & Radcliff, KY",
+  home_city_slug: null,
+  home_state_slug: null,
   operating_hours: {
     Monday: { open: "11:00", close: "19:00", closed: false },
     Tuesday: { open: "11:00", close: "19:00", closed: false },
@@ -207,6 +209,8 @@ export const sparseMockTruck: Truck = {
   is_verified: false,
   is_open: false,
   service_area: null,
+  home_city_slug: null,
+  home_state_slug: null,
   operating_hours: null,
   facebook_url: null,
   instagram_url: null,
@@ -257,6 +261,8 @@ export const mixedMockTruck: Truck = {
   is_verified: false,
   is_open: false,
   service_area: "Louisville, KY",
+  home_city_slug: null,
+  home_state_slug: null,
   operating_hours: {
     Monday: { open: "11:00", close: "19:00", closed: false },
     Tuesday: { open: "11:00", close: "19:00", closed: false },

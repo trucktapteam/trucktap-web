@@ -129,8 +129,8 @@ export async function RedesignHeroB() {
           </h1>
 
           <p className="mt-6 max-w-[34ch] text-pretty text-base leading-relaxed text-white/65 sm:max-w-[40ch] sm:text-lg lg:max-w-[34ch]">
-            TruckTap shows you where food trucks are serving now — and helps you find your favorites
-            again.
+            TruckTap shows you where food trucks are serving now and where they&rsquo;ll be next — and helps
+            you find your favorites again.
           </p>
 
           <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-7">

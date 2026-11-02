@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { AreaLink } from "@/lib/geography";
 
 /**
  * The bottom-of-profile counterpart to DiscoverTrucksLink at the top: a
@@ -9,11 +10,21 @@ import Link from "next/link";
  * gradient — this is a different, non-competing kind of next step
  * ("see more trucks" vs. "get the app"), not a restyled duplicate of it.
  */
-export function DiscoverTrucksCta() {
+export function DiscoverTrucksCta({ areaLinks = [] }: { areaLinks?: AreaLink[] }) {
   return (
     <section className="flex flex-col items-start gap-2 rounded-3xl border border-border bg-white p-6 shadow-sm">
       <p className="text-base font-bold tracking-tight text-ink">Hungry for something else?</p>
       <p className="text-sm text-muted">Find food trucks, trailers, carts, and mobile vendors near you.</p>
+      {areaLinks.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-brand-dark transition duration-200 hover:translate-x-0.5"
+        >
+          More food trucks in {link.label}
+          <ArrowRightIcon />
+        </Link>
+      ))}
       <Link
         href="/trucks"
         className="mt-2 inline-flex items-center gap-1.5 text-sm font-bold text-brand-dark transition duration-200 hover:translate-x-0.5"

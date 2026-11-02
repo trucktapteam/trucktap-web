@@ -15,4 +15,18 @@ describe("DiscoverTrucksCta", () => {
     const link = screen.getByRole("link", { name: /Find Trucks Near Me/ });
     expect(link).toHaveAttribute("href", "/trucks");
   });
+
+  it("adds normal links to the truck's own city and state when given", () => {
+    render(
+      <DiscoverTrucksCta
+        areaLinks={[
+          { href: "/city/elizabethtown-ky", label: "Elizabethtown, KY" },
+          { href: "/state/kentucky", label: "Kentucky" },
+        ]}
+      />
+    );
+
+    expect(screen.getByRole("link", { name: /More food trucks in Elizabethtown, KY/ })).toHaveAttribute("href", "/city/elizabethtown-ky");
+    expect(screen.getByRole("link", { name: /More food trucks in Kentucky/ })).toHaveAttribute("href", "/state/kentucky");
+  });
 });

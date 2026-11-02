@@ -23,6 +23,9 @@ export type Truck = {
   is_verified: boolean;
   is_open: boolean;
   service_area: string | null;
+  /** Resolved home geography. Null when `service_area` could not be classified. */
+  home_city_slug: string | null;
+  home_state_slug: string | null;
   operating_hours: OperatingHours | null;
   facebook_url: string | null;
   instagram_url: string | null;

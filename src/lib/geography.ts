@@ -126,16 +126,76 @@ export function buildStateMetadata(state: StateGeographySummary): GeographyPageM
   const truckWord = state.count === 1 ? "truck" : "trucks";
   return {
     title: `Food Trucks in ${state.stateName}`,
-    description: `Find food trucks based in ${state.stateName} on TruckTap — see who's live right now, what's coming up next, and browse ${state.count} ${truckWord}.`,
+    description: `Find food trucks in ${state.stateName} on TruckTap. See who's LIVE right now, check upcoming stops, and browse ${state.count} ${truckWord} based here.`,
     canonicalUrl: `${SITE_URL}/state/${state.stateSlug}`,
   };
 }
 
-export function buildCityMetadata(city: CityGeographySummary): GeographyPageMetadata {
+/** `hasSchedule` keeps the wording honest: only a page that actually lists dated stops claims to. */
+export function buildCityMetadata(city: CityGeographySummary, hasSchedule = false): GeographyPageMetadata {
   const truckWord = city.count === 1 ? "truck" : "trucks";
+  const place = `${city.cityName}, ${city.stateName}`;
   return {
-    title: `Food Trucks in ${city.cityName}, ${city.stateAbbreviation}`,
-    description: `Find food trucks based in ${city.cityName}, ${city.stateName} on TruckTap — see who's live right now, what's coming up next, and browse ${city.count} ${truckWord}.`,
+    title: hasSchedule ? `Food Trucks in ${place}: Upcoming Schedules` : `Food Trucks in ${place}`,
+    description: hasSchedule
+      ? `See upcoming food truck schedules in and near ${place}, plus who's LIVE right now. Browse ${city.count} ${truckWord} based here on TruckTap.`
+      : `Find food trucks in ${place} on TruckTap. See who's LIVE right now and browse ${city.count} ${truckWord} based here.`,
     canonicalUrl: `${SITE_URL}/city/${city.citySlug}`,
   };
+}
+
+export type AreaLink = { href: string; label: string };
+export type AreaLinks = { states: AreaLink[]; cities: AreaLink[] };
+
+/** Links to the state and city pages that actually exist, largest first. Pure, so it's testable without Supabase. */
+export function buildAreaLinks(summaries: StateGeographySummary[]): AreaLinks {
+  const byCount = <T extends { count: number }>(a: T, b: T) => b.count - a.count;
+  return {
+    states: qualifyingStates(summaries)
+      .sort(byCount)
+      .map((state) => ({ href: `/state/${state.stateSlug}`, label: state.stateName })),
+    cities: qualifyingCities(summaries)
+      .sort(byCount)
+      .map((city) => ({ href: `/city/${city.citySlug}`, label: `${city.cityName}, ${city.stateAbbreviation}` })),
+  };
+}
+
+/** Never lets a navigation aid take a page down: if geography can't load, there are simply no links. */
+export async function getAreaLinks(): Promise<AreaLinks> {
+  try {
+    return buildAreaLinks(await getGeographySummaries());
+  } catch (error) {
+    console.error("Failed to load area links:", error);
+    return { states: [], cities: [] };
+  }
+}
+
+/**
+ * A truck's links to its own city and state pages. Uses the truck's resolved
+ * home geography, never its free-text `service_area`, and links only to pages
+ * that exist. A truck with no classified geography gets no links.
+ */
+export function buildTruckAreaLinks(
+  summaries: StateGeographySummary[],
+  truck: { home_city_slug: string | null; home_state_slug: string | null }
+): AreaLink[] {
+  const links: AreaLink[] = [];
+  const city = truck.home_city_slug ? findQualifyingCity(summaries, truck.home_city_slug) : null;
+  if (city) links.push({ href: `/city/${city.citySlug}`, label: `${city.cityName}, ${city.stateAbbreviation}` });
+  const state = truck.home_state_slug ? findQualifyingState(summaries, truck.home_state_slug) : null;
+  if (state) links.push({ href: `/state/${state.stateSlug}`, label: state.stateName });
+  return links;
+}
+
+export async function getTruckAreaLinks(truck: {
+  home_city_slug: string | null;
+  home_state_slug: string | null;
+}): Promise<AreaLink[]> {
+  if (!truck.home_city_slug && !truck.home_state_slug) return [];
+  try {
+    return buildTruckAreaLinks(await getGeographySummaries(), truck);
+  } catch (error) {
+    console.error("Failed to load truck area links:", error);
+    return [];
+  }
 }

@@ -91,4 +91,32 @@ describe("sitemap", () => {
       "https://gettrucktap.com/privacy",
     ]);
   });
+
+  // The sitemap stayed frozen at its build on Vercel with `revalidate`.
+  it("is generated per request rather than cached", async () => {
+    const route = await import("./sitemap");
+    expect(route.dynamic).toBe("force-dynamic");
+  });
+
+  // Generated per request, a `new Date()` here would claim every page changed on every fetch.
+  it("sets lastModified only from a truck's real edit time", async () => {
+    vi.mocked(getPublicTruckSitemapEntries).mockResolvedValue([
+      { slug: "papa-pasta", updated_at: "2026-08-01T00:00:00.000Z" },
+    ]);
+    vi.mocked(getGeographySummaries).mockResolvedValue(QUALIFYING_AND_THIN_SUMMARIES);
+
+    const entries = await sitemap();
+    const withDate = entries.filter((entry) => entry.lastModified !== undefined);
+
+    expect(withDate).toEqual([expect.objectContaining({ url: "https://gettrucktap.com/truck/papa-pasta", lastModified: "2026-08-01T00:00:00.000Z" })]);
+  });
+
+  it("picks up a newly published truck on the next request", async () => {
+    vi.mocked(getGeographySummaries).mockResolvedValue([]);
+    vi.mocked(getPublicTruckSitemapEntries).mockResolvedValue([]);
+    expect((await sitemap()).map((e) => e.url)).not.toContain("https://gettrucktap.com/truck/new-truck");
+
+    vi.mocked(getPublicTruckSitemapEntries).mockResolvedValue([{ slug: "new-truck", updated_at: "2026-11-02T00:00:00.000Z" }]);
+    expect((await sitemap()).map((e) => e.url)).toContain("https://gettrucktap.com/truck/new-truck");
+  });
 });

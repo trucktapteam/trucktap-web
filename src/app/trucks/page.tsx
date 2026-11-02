@@ -4,15 +4,17 @@ import { SiteFooter } from "@/components/home/SiteFooter";
 import { TrucksDirectory } from "@/components/trucks/TrucksDirectory";
 import { getRankedDirectoryTrucks } from "@/lib/trucks-directory";
 import { SITE_URL } from "@/lib/site";
+import { AreaLinksNav } from "@/components/AreaLinksNav";
+import { getAreaLinks } from "@/lib/geography";
 
 // LIVE status is the whole point of this page — the homepage's 1-hour
 // marquee cadence would leave "live now" visibly stale. A short window
 // keeps it close to real-time without going fully dynamic per-request.
 export const revalidate = 60;
 
-const TITLE = "Find Food Trucks Near You";
+const TITLE = "Food Trucks Near You: Live Now & Upcoming Schedules";
 const DESCRIPTION =
-  "Browse food trucks on TruckTap — see who's live right now, what's coming up, and find a truck's menu, photos, and location.";
+  "Find food trucks on TruckTap. See who's LIVE right now, check upcoming food truck schedules, and open any truck's menu, photos, and location.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -37,6 +39,8 @@ export default async function TrucksPage() {
     loadFailed = true;
   }
 
+  const areaLinks = await getAreaLinks();
+
   return (
     <div className="paper-grid flex flex-1 flex-col">
       <SiteHeader />
@@ -54,6 +58,8 @@ export default async function TrucksPage() {
             Trucks that are live right now show up first, then anyone with an upcoming stop. Search by name or
             cuisine to narrow it down.
           </p>
+
+          <AreaLinksNav links={areaLinks} className="mt-6" />
 
           <div className="mt-8">
             {loadFailed ? (

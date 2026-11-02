@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -32,12 +33,27 @@ async function resolveCity(citySlug: string): Promise<{ city: CityGeographySumma
   return { city, stateQualifies };
 }
 
+// Shared by the metadata and the page within one request, so the title and the
+// visible section always agree. If the schedule can't load, the page still
+// lists its trucks and simply has no schedule section.
+const loadSchedule = cache(async (citySlug: string): Promise<CityScheduleDay[]> => {
+  try {
+    return await getCitySchedule(citySlug);
+  } catch (error) {
+    console.error(`Failed to load /city/${citySlug} schedule:`, error);
+    return [];
+  }
+});
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { citySlug } = await params;
   const resolved = await resolveCity(citySlug);
   if (!resolved) return {};
 
-  const { title, description, canonicalUrl } = buildCityMetadata(resolved.city);
+  const { title, description, canonicalUrl } = buildCityMetadata(
+    resolved.city,
+    (await loadSchedule(resolved.city.citySlug)).length > 0
+  );
   return {
     title,
     description,
@@ -61,14 +77,7 @@ export default async function CityPage({ params }: Props) {
     loadFailed = true;
   }
 
-  // Separate from the directory above: if the schedule can't load, the page
-  // still lists its trucks and simply has no schedule section.
-  let schedule: CityScheduleDay[] = [];
-  try {
-    schedule = await getCitySchedule(city.citySlug);
-  } catch (error) {
-    console.error(`Failed to load /city/${citySlug} schedule:`, error);
-  }
+  const schedule = await loadSchedule(city.citySlug);
 
   return (
     <div className="paper-grid flex flex-1 flex-col">

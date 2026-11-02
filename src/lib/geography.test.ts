@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildAreaLinks,
   buildCityMetadata,
   buildGeographySummaries,
   buildStateMetadata,
+  buildTruckAreaLinks,
   findQualifyingCity,
   findQualifyingState,
   getGeographySummaries,
@@ -140,7 +142,7 @@ describe("buildStateMetadata / buildCityMetadata", () => {
 
   it("uses singular 'truck' for a count of exactly one", () => {
     const meta = buildStateMetadata({ stateSlug: "colorado", stateName: "Colorado", count: 1, cities: [] });
-    expect(meta.description).toContain("1 truck.");
+    expect(meta.description).toContain("1 truck based here.");
   });
 
   it("builds a unique title, description, and canonical URL for a city", () => {
@@ -152,7 +154,7 @@ describe("buildStateMetadata / buildCityMetadata", () => {
       stateAbbreviation: "KY",
       count: 7,
     });
-    expect(meta.title).toBe("Food Trucks in Elizabethtown, KY");
+    expect(meta.title).toBe("Food Trucks in Elizabethtown, Kentucky");
     expect(meta.description).toContain("Elizabethtown, Kentucky");
     expect(meta.canonicalUrl).toBe("https://gettrucktap.com/city/elizabethtown-ky");
   });
@@ -196,5 +198,91 @@ describe("getGeographySummaries", () => {
     mockSupabaseTables({ public_trucks: { data: null, error: { message: "connection refused" } } });
 
     await expect(getGeographySummaries()).rejects.toThrow("connection refused");
+  });
+});
+
+describe("buildCityMetadata wording", () => {
+  const city = {
+    citySlug: "elizabethtown-ky",
+    cityName: "Elizabethtown",
+    stateSlug: "kentucky",
+    stateName: "Kentucky",
+    stateAbbreviation: "KY",
+    count: 7,
+  };
+
+  it("mentions schedules when the page actually lists dated stops", () => {
+    const meta = buildCityMetadata(city, true);
+    expect(meta.title).toBe("Food Trucks in Elizabethtown, Kentucky: Upcoming Schedules");
+    expect(meta.description).toContain("upcoming food truck schedules in and near Elizabethtown, Kentucky");
+    expect(meta.description).toContain("LIVE");
+  });
+
+  it("doesn't promise a schedule when the page has none", () => {
+    const meta = buildCityMetadata(city, false);
+    expect(meta.title).toBe("Food Trucks in Elizabethtown, Kentucky");
+    expect(`${meta.title} ${meta.description}`.toLowerCase()).not.toMatch(/schedule|upcoming/);
+  });
+});
+
+describe("area links", () => {
+  const summaries = [
+    {
+      stateSlug: "illinois",
+      stateName: "Illinois",
+      count: 5,
+      cities: [
+        { citySlug: "morton-il", cityName: "Morton", stateSlug: "illinois", stateName: "Illinois", stateAbbreviation: "IL", count: 1 },
+      ],
+    },
+    {
+      stateSlug: "kentucky",
+      stateName: "Kentucky",
+      count: 28,
+      cities: [
+        { citySlug: "radcliff-ky", cityName: "Radcliff", stateSlug: "kentucky", stateName: "Kentucky", stateAbbreviation: "KY", count: 2 },
+        { citySlug: "elizabethtown-ky", cityName: "Elizabethtown", stateSlug: "kentucky", stateName: "Kentucky", stateAbbreviation: "KY", count: 7 },
+        { citySlug: "hodgenville-ky", cityName: "Hodgenville", stateSlug: "kentucky", stateName: "Kentucky", stateAbbreviation: "KY", count: 1 },
+      ],
+    },
+    {
+      stateSlug: "colorado",
+      stateName: "Colorado",
+      count: 1,
+      cities: [
+        { citySlug: "denver-co", cityName: "Denver", stateSlug: "colorado", stateName: "Colorado", stateAbbreviation: "CO", count: 1 },
+      ],
+    },
+  ];
+
+  it("links only to pages that exist, largest first", () => {
+    expect(buildAreaLinks(summaries)).toEqual({
+      states: [
+        { href: "/state/kentucky", label: "Kentucky" },
+        { href: "/state/illinois", label: "Illinois" },
+      ],
+      cities: [
+        { href: "/city/elizabethtown-ky", label: "Elizabethtown, KY" },
+        { href: "/city/radcliff-ky", label: "Radcliff, KY" },
+      ],
+    });
+  });
+
+  it("links a truck to its own city and state", () => {
+    expect(buildTruckAreaLinks(summaries, { home_city_slug: "elizabethtown-ky", home_state_slug: "kentucky" })).toEqual([
+      { href: "/city/elizabethtown-ky", label: "Elizabethtown, KY" },
+      { href: "/state/kentucky", label: "Kentucky" },
+    ]);
+  });
+
+  it("skips a city too small to have a page but keeps its state", () => {
+    expect(buildTruckAreaLinks(summaries, { home_city_slug: "hodgenville-ky", home_state_slug: "kentucky" })).toEqual([
+      { href: "/state/kentucky", label: "Kentucky" },
+    ]);
+  });
+
+  it("gives no links to a truck with no classified geography, or only thin pages", () => {
+    expect(buildTruckAreaLinks(summaries, { home_city_slug: null, home_state_slug: null })).toEqual([]);
+    expect(buildTruckAreaLinks(summaries, { home_city_slug: "denver-co", home_state_slug: "colorado" })).toEqual([]);
   });
 });

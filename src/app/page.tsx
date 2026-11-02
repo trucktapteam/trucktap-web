@@ -8,6 +8,8 @@ import { OwnerStorySection } from "@/components/redesign/OwnerStorySection";
 import { PartnerNetworkSection } from "@/components/redesign/PartnerNetworkSection";
 import { BecomePartnerSection } from "@/components/redesign/BecomePartnerSection";
 import { RedesignFooter } from "@/components/redesign/RedesignFooter";
+import { AreaLinksNav } from "@/components/AreaLinksNav";
+import { getAreaLinks } from "@/lib/geography";
 import { getTtnGuide } from "@/lib/redesign/ttn-guide";
 import { getRetentionTruck } from "@/lib/redesign/retention-truck";
 
@@ -20,7 +22,7 @@ import { getRetentionTruck } from "@/lib/redesign/retention-truck";
 export const metadata: Metadata = {
   title: { absolute: "TruckTap | Find Food Trucks That Are Actually Open" },
   description:
-    "TruckTap helps you find food trucks that are actually open right now. See real locations, follow favorite trucks, and never miss an update.",
+    "TruckTap helps you find food trucks that are actually open right now. See LIVE locations, check upcoming food truck schedules, and follow your favorites.",
   openGraph: {
     title: "TruckTap | Find Food Trucks That Are Actually Open",
     description: "Real food trucks. Real locations. Less guessing, more eating.",
@@ -43,9 +45,10 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const now = new Date();
-  const [guide, retentionTruck] = await Promise.all([
+  const [guide, retentionTruck, areaLinks] = await Promise.all([
     getTtnGuide(now),
     getRetentionTruck(),
+    getAreaLinks(),
   ]);
 
   return (
@@ -63,6 +66,8 @@ export default async function Home() {
         <NetworkHandoff />
 
         <Ttn86 guide={guide} serverNowIso={now.toISOString()} />
+
+        <AreaLinksNav links={areaLinks} tone="dark" className="px-5 py-8 sm:px-8 lg:px-14 xl:px-20" />
 
         <RetentionSection truck={retentionTruck} />
 
