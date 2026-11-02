@@ -37,7 +37,10 @@ export function AreaLinksNav({
         Browse food trucks by area
       </p>
       {/* One swipeable row on phones so the links don't push content down; wraps from `sm` up. */}
-      <div className="mt-1 flex gap-2 overflow-x-auto py-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
+      <div
+        className="mt-1 flex gap-2 overflow-x-auto py-1 sm:flex-wrap sm:overflow-visible"
+        style={{ scrollbarWidth: "none" }}
+      >
         <Chips links={links.states} tone={tone} />
         <Chips links={links.cities} tone={tone} />
       </div>
