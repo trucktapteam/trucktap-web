@@ -4,6 +4,8 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/home/SiteHeader";
 import { SiteFooter } from "@/components/home/SiteFooter";
 import { TrucksDirectory } from "@/components/trucks/TrucksDirectory";
+import { CityScheduleSection } from "@/components/city/CityScheduleSection";
+import { getCitySchedule, type CityScheduleDay } from "@/lib/city-schedule";
 import { getRankedDirectoryTrucks } from "@/lib/trucks-directory";
 import {
   buildCityMetadata,
@@ -59,6 +61,15 @@ export default async function CityPage({ params }: Props) {
     loadFailed = true;
   }
 
+  // Separate from the directory above: if the schedule can't load, the page
+  // still lists its trucks and simply has no schedule section.
+  let schedule: CityScheduleDay[] = [];
+  try {
+    schedule = await getCitySchedule(city.citySlug);
+  } catch (error) {
+    console.error(`Failed to load /city/${citySlug} schedule:`, error);
+  }
+
   return (
     <div className="paper-grid flex flex-1 flex-col">
       <SiteHeader />
@@ -86,6 +97,8 @@ export default async function CityPage({ params }: Props) {
             {city.count} food truck{city.count === 1 ? "" : "s"} based in {city.cityName} on TruckTap. Trucks that
             are live right now show up first, then anyone with an upcoming stop.
           </p>
+
+          <CityScheduleSection cityName={city.cityName} days={schedule} />
 
           <div className="mt-8">
             {loadFailed ? (

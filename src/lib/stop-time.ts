@@ -69,6 +69,22 @@ function dateText(date: Date, timeZone: string, now: Date): string {
 }
 
 /**
+ * "4:00 PM EST – 7:00 PM EST". The end shows only when it's real and after
+ * the start, and repeats the date if it falls on a later local day.
+ */
+function clockRange(start: Date, endsAt: string | null | undefined, timeZone: string, now: Date): string {
+  const startClock = clockText(start, timeZone);
+  const end = endsAt ? new Date(endsAt) : null;
+  if (!end || !(end.getTime() > start.getTime())) return startClock;
+
+  const endDate = dateText(end, timeZone, now);
+  const endClock = clockText(end, timeZone);
+  return endDate === dateText(start, timeZone, now)
+    ? `${startClock} – ${endClock}`
+    : `${startClock} – ${endDate}, ${endClock}`;
+}
+
+/**
  * The end time shows only when it's real and after the start. An end on a
  * later local date repeats the date, so a late stop can't read as ending
  * before it began.
@@ -84,17 +100,27 @@ export function formatStopTime(stop: StopTimes, now: Date = new Date()): StopTim
   const start = new Date(stop.starts_at);
   if (Number.isNaN(start.getTime())) return null;
 
-  const startDate = dateText(start, timezone, now);
-  const startClock = clockText(start, timezone);
   const { month, day } = partsIn(start, timezone, { month: "short", day: "numeric" });
-
-  const end = stop.ends_at ? new Date(stop.ends_at) : null;
-  let whenLabel = `${startDate}, ${startClock}`;
-  if (end && end.getTime() > start.getTime()) {
-    const endDate = dateText(end, timezone, now);
-    const endClock = clockText(end, timezone);
-    whenLabel += endDate === startDate ? ` – ${endClock}` : ` – ${endDate}, ${endClock}`;
-  }
+  const whenLabel = `${dateText(start, timezone, now)}, ${clockRange(start, stop.ends_at, timezone, now)}`;
 
   return { whenLabel, monthLabel: month, dayLabel: day };
+}
+
+/** The stop's time range without its date, for lists already grouped by day. `null` under the same rules as `formatStopTime`. */
+export function formatStopClockRange(stop: StopTimes, now: Date = new Date()): string | null {
+  const { timezone } = stop;
+  if (!isValidTimeZone(timezone)) return null;
+  const start = new Date(stop.starts_at);
+  if (Number.isNaN(start.getTime())) return null;
+  return clockRange(start, stop.ends_at, timezone, now);
+}
+
+/** The calendar date where the stop happens: a sortable `key` and a display `label` ("Thu, Nov 5"). */
+export function formatStopDay(stop: StopTimes, now: Date = new Date()): { key: string; label: string } | null {
+  const { timezone } = stop;
+  if (!isValidTimeZone(timezone)) return null;
+  const start = new Date(stop.starts_at);
+  if (Number.isNaN(start.getTime())) return null;
+  const { year, month, day } = partsIn(start, timezone, { year: "numeric", month: "2-digit", day: "2-digit" });
+  return { key: `${year}-${month}-${day}`, label: dateText(start, timezone, now) };
 }
