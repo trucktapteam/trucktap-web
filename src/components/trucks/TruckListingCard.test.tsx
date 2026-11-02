@@ -29,6 +29,8 @@ describe("TruckListingCard", () => {
     expect(screen.getByText("Upcoming")).toBeInTheDocument();
     expect(screen.getByText("Mon, Aug 10")).toBeInTheDocument();
     expect(screen.getByText("Farmers Market")).toBeInTheDocument();
+    // Crawlers and AI tools read raw text, so the two lines must not run together.
+    expect(screen.getByRole("link").textContent).toContain("Mon, Aug 10 Farmers Market");
   });
 
   it("shows 'Not live right now' for an ordinary truck, never implying it's as active as a live one", () => {

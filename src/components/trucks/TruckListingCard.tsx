@@ -66,7 +66,7 @@ function StatusLine({ truck }: { truck: DirectoryTruckCard }) {
       <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm">
         <span className="h-2 w-2 shrink-0 rounded-full bg-warning" aria-hidden="true" />
         <span className="font-semibold text-ink">Upcoming</span>
-        <span className="w-full text-muted">{truck.nextStop.whenLabel}</span>
+        <span className="w-full text-muted">{truck.nextStop.whenLabel}</span>{" "}
         <span className="w-full truncate text-muted">{truck.nextStop.locationText}</span>
       </p>
     );
