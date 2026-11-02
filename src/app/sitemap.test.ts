@@ -52,7 +52,7 @@ describe("sitemap", () => {
   });
 
   it("includes only qualifying state/city pages, excluding below-threshold places", async () => {
-    vi.mocked(getPublicTruckSitemapEntries).mockResolvedValue([]);
+    vi.mocked(getPublicTruckSitemapEntries).mockResolvedValue([{ slug: "papa-pasta", updated_at: "2026-08-01T00:00:00.000Z" }]);
     vi.mocked(getGeographySummaries).mockResolvedValue(QUALIFYING_AND_THIN_SUMMARIES);
 
     const entries = await sitemap();
@@ -66,30 +66,28 @@ describe("sitemap", () => {
     expect(urls).not.toContain("https://gettrucktap.com/city/burnside-ky");
   });
 
-  it("falls back to the static pages only when the truck query fails, instead of erroring the whole route", async () => {
+  // A successful but incomplete sitemap tells crawlers those pages are gone.
+  it("fails the request when the truck query fails", async () => {
     vi.mocked(getPublicTruckSitemapEntries).mockRejectedValue(new Error("connection refused"));
-    vi.mocked(getGeographySummaries).mockResolvedValue([]);
+    vi.mocked(getGeographySummaries).mockResolvedValue(QUALIFYING_AND_THIN_SUMMARIES);
 
-    const entries = await sitemap();
-
-    expect(entries.map((entry) => entry.url)).toEqual([
-      "https://gettrucktap.com",
-      "https://gettrucktap.com/trucks",
-      "https://gettrucktap.com/privacy",
-    ]);
+    await expect(sitemap()).rejects.toThrow("connection refused");
   });
 
-  it("falls back to omitting geography pages when the geography query fails, without erroring the whole route", async () => {
-    vi.mocked(getPublicTruckSitemapEntries).mockResolvedValue([]);
+  it("fails the request when the geography query fails", async () => {
+    vi.mocked(getPublicTruckSitemapEntries).mockResolvedValue([
+      { slug: "papa-pasta", updated_at: "2026-08-01T00:00:00.000Z" },
+    ]);
     vi.mocked(getGeographySummaries).mockRejectedValue(new Error("connection refused"));
 
-    const entries = await sitemap();
+    await expect(sitemap()).rejects.toThrow("connection refused");
+  });
 
-    expect(entries.map((entry) => entry.url)).toEqual([
-      "https://gettrucktap.com",
-      "https://gettrucktap.com/trucks",
-      "https://gettrucktap.com/privacy",
-    ]);
+  it("fails the request when the truck query returns no trucks at all", async () => {
+    vi.mocked(getPublicTruckSitemapEntries).mockResolvedValue([]);
+    vi.mocked(getGeographySummaries).mockResolvedValue([]);
+
+    await expect(sitemap()).rejects.toThrow("no public trucks");
   });
 
   // The sitemap stayed frozen at its build on Vercel with `revalidate`.
@@ -113,7 +111,7 @@ describe("sitemap", () => {
 
   it("picks up a newly published truck on the next request", async () => {
     vi.mocked(getGeographySummaries).mockResolvedValue([]);
-    vi.mocked(getPublicTruckSitemapEntries).mockResolvedValue([]);
+    vi.mocked(getPublicTruckSitemapEntries).mockResolvedValue([{ slug: "papa-pasta", updated_at: "2026-08-01T00:00:00.000Z" }]);
     expect((await sitemap()).map((e) => e.url)).not.toContain("https://gettrucktap.com/truck/new-truck");
 
     vi.mocked(getPublicTruckSitemapEntries).mockResolvedValue([{ slug: "new-truck", updated_at: "2026-11-02T00:00:00.000Z" }]);
