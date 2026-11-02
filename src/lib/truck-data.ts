@@ -74,6 +74,7 @@ type UpcomingStopRow = {
   truck_id: string;
   starts_at: string;
   ends_at: string;
+  timezone: string | null;
   location_text: string;
   note: string | null;
   status: UpcomingStop["status"];
@@ -200,7 +201,7 @@ async function hydrateTruck(supabase: Supabase, truckRow: PublicTruckRow): Promi
       .maybeSingle<LocationRow>(),
     supabase
       .from("upcoming_stops")
-      .select("id, truck_id, starts_at, ends_at, location_text, note, status, event_image_url")
+      .select("id, truck_id, starts_at, ends_at, timezone, location_text, note, status, event_image_url")
       .eq("truck_id", truckRow.id)
       .order("starts_at", { ascending: true })
       .returns<UpcomingStopRow[]>(),
@@ -267,6 +268,7 @@ async function hydrateTruck(supabase: Supabase, truckRow: PublicTruckRow): Promi
     id: stop.id,
     starts_at: stop.starts_at,
     ends_at: stop.ends_at,
+    timezone: stop.timezone,
     location_text: stop.location_text,
     note: stop.note ?? undefined,
     status: stop.status,

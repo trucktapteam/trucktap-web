@@ -1,19 +1,24 @@
-import { describe, expect, it } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, render, screen, fireEvent } from "@testing-library/react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { makeTruck } from "@/lib/test-fixtures";
 import type { UpcomingStop } from "@/lib/types";
-import * as formatModule from "@/lib/format";
+import { toUpcomingStopsInfo } from "@/lib/truck-view-models";
 import { UpcomingStopsSection } from "./UpcomingStopsSection";
 
 // Matches the fake NEXT_PUBLIC_SUPABASE_URL set in vitest.setup.ts.
 const FLYER_A = "https://test-project.supabase.co/storage/v1/object/public/upcoming-stop-images/abc/flyer-a.png";
 const FLYER_B = "https://test-project.supabase.co/storage/v1/object/public/upcoming-stop-images/abc/flyer-b.png";
 
+const NOW = new Date("2026-08-02T12:00:00.000Z");
+
 function makeStop(overrides: Partial<UpcomingStop> = {}): UpcomingStop {
   return {
     id: "s1",
     starts_at: "2026-08-10T00:00:00.000Z",
     ends_at: "2026-08-10T04:00:00.000Z",
+    timezone: "America/New_York",
     location_text: "Farmers Market",
     status: "scheduled",
     ...overrides,
@@ -26,7 +31,7 @@ describe("UpcomingStopsSection flyer viewer", () => {
   // did nothing. It must now open a working full-size viewer.
   it("opens a full-size dialog from a stop's flyer image", () => {
     const truck = makeTruck({ upcomingStops: [makeStop({ flyer_image: FLYER_A })] });
-    render(<UpcomingStopsSection truck={truck} />);
+    render(<UpcomingStopsSection truck={toUpcomingStopsInfo(truck, NOW)} />);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Open event flyer for Farmers Market" }));
@@ -44,7 +49,7 @@ describe("UpcomingStopsSection flyer viewer", () => {
   // fixed`. Portaling to document.body fixes it for flyers too.
   it("renders the flyer lightbox as a direct child of document.body (portal)", () => {
     const truck = makeTruck({ upcomingStops: [makeStop({ flyer_image: FLYER_A })] });
-    render(<UpcomingStopsSection truck={truck} />);
+    render(<UpcomingStopsSection truck={toUpcomingStopsInfo(truck, NOW)} />);
     fireEvent.click(screen.getByRole("button", { name: "Open event flyer for Farmers Market" }));
 
     expect(screen.getByRole("dialog").parentElement).toBe(document.body);
@@ -52,7 +57,7 @@ describe("UpcomingStopsSection flyer viewer", () => {
 
   it("closes with Escape and returns focus to the flyer thumbnail", () => {
     const truck = makeTruck({ upcomingStops: [makeStop({ flyer_image: FLYER_A })] });
-    render(<UpcomingStopsSection truck={truck} />);
+    render(<UpcomingStopsSection truck={toUpcomingStopsInfo(truck, NOW)} />);
 
     const trigger = screen.getByRole("button", { name: "Open event flyer for Farmers Market" });
     fireEvent.click(trigger);
@@ -65,7 +70,7 @@ describe("UpcomingStopsSection flyer viewer", () => {
 
   it("shows the date chip (not a button) for a stop with no flyer", () => {
     const truck = makeTruck({ upcomingStops: [makeStop({ flyer_image: undefined })] });
-    render(<UpcomingStopsSection truck={truck} />);
+    render(<UpcomingStopsSection truck={toUpcomingStopsInfo(truck, NOW)} />);
 
     expect(screen.queryByRole("button", { name: /Open event flyer/ })).not.toBeInTheDocument();
   });
@@ -79,7 +84,7 @@ describe("UpcomingStopsSection flyer viewer", () => {
         makeStop({ id: "s2", location_text: "Harbor Freight", flyer_image: FLYER_B }),
       ],
     });
-    render(<UpcomingStopsSection truck={truck} />);
+    render(<UpcomingStopsSection truck={toUpcomingStopsInfo(truck, NOW)} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Open event flyer for Farmers Market" }));
     let img = screen.getByAltText("Photo 1 of Test Truck");
@@ -96,32 +101,59 @@ describe("UpcomingStopsSection flyer viewer", () => {
   });
 });
 
-describe("UpcomingStopsSection stop-time hydration safety", () => {
-  // Regression test for a real production hydration bug (React error
-  // #418): this is a Client Component, so Next renders it once on the
-  // server and again in the browser during hydration. Formatting the stop
-  // time with the runtime's ambient time zone made those two renders
-  // disagree whenever the server's zone (Vercel: UTC) differed from the
-  // visitor's browser zone — confirmed live: production served "3:00 PM"
-  // but hydrated to "11:00 AM" for the same instant. The fix is
-  // useSyncExternalStore's server/client snapshot split: force UTC
-  // (deterministic, matches the server) for the actual SSR pass, then
-  // upgrade to the ambient zone once mounted on the client.
-  //
-  // useSyncExternalStore's getServerSnapshot only runs under genuine SSR
-  // (renderToString/hydrateRoot) — a plain client render() never calls
-  // it, so RTL alone can't observe the pre-mount pass. This exercises the
-  // real server API directly instead: renderToString must produce the
-  // UTC text, and RTL's (client-only) render must produce the ambient-zone
-  // text — the same two values a real hydration diffs against each other.
-  it("SSRs the stop time in UTC and client-renders it in the ambient zone (the hydration-safe split)", async () => {
-    const { renderToString } = await import("react-dom/server");
-    const truck = makeTruck({ upcomingStops: [makeStop({ starts_at: "2026-08-05T15:00:00.000Z" })] });
-
-    const ssrHtml = renderToString(<UpcomingStopsSection truck={truck} />);
-    expect(ssrHtml).toContain(formatModule.formatDateTime("2026-08-05T15:00:00.000Z", "UTC"));
-
-    render(<UpcomingStopsSection truck={truck} />);
-    expect(screen.getByText(formatModule.formatDateTime("2026-08-05T15:00:00.000Z"))).toBeInTheDocument();
+describe("UpcomingStopsSection stop times", () => {
+  const originalTz = process.env.TZ;
+  afterEach(() => {
+    process.env.TZ = originalTz;
+    vi.restoreAllMocks();
   });
+
+  const FLYWHEEL_NOW = new Date("2026-11-02T01:00:00.000Z");
+  const flywheelTruck = makeTruck({
+    upcomingStops: [
+      makeStop({
+        starts_at: "2026-11-05T21:00:00+00:00",
+        ends_at: "2026-11-06T00:00:00+00:00",
+        location_text: "Flywheel Brewing",
+      }),
+    ],
+  });
+
+  // The production bug: the server sent "Thu, Nov 5, 9:00 PM" (UTC, unlabeled)
+  // to crawlers and AI tools, then the browser swapped in the visitor's zone.
+  it("server-renders the stop's local time, labeled", () => {
+    process.env.TZ = "UTC";
+    const html = renderToString(<UpcomingStopsSection truck={toUpcomingStopsInfo(flywheelTruck, FLYWHEEL_NOW)} />);
+
+    expect(html).toContain("Thu, Nov 5, 4:00 PM EST – 7:00 PM EST");
+    expect(html).not.toContain("9:00 PM");
+    expect(html).toContain(">Nov<");
+    expect(html).toContain(">5<");
+  });
+
+  // React error #418 happened in production when these two passes disagreed.
+  it.each(["America/New_York", "America/Los_Angeles", "Asia/Tokyo"])(
+    "hydrates without a mismatch for a visitor in %s",
+    async (visitorZone) => {
+      process.env.TZ = "UTC";
+      const info = toUpcomingStopsInfo(flywheelTruck, FLYWHEEL_NOW);
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      container.innerHTML = renderToString(<UpcomingStopsSection truck={info} />);
+
+      process.env.TZ = visitorZone;
+      const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+      const onRecoverableError = vi.fn();
+      const root = await act(async () =>
+        hydrateRoot(container, <UpcomingStopsSection truck={info} />, { onRecoverableError })
+      );
+
+      expect(onRecoverableError).not.toHaveBeenCalled();
+      expect(consoleError).not.toHaveBeenCalled();
+      expect(container).toHaveTextContent("Thu, Nov 5, 4:00 PM EST – 7:00 PM EST");
+
+      await act(async () => root.unmount());
+      container.remove();
+    }
+  );
 });

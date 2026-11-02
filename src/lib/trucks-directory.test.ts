@@ -201,6 +201,7 @@ describe("getDirectoryTrucks", () => {
             truck_id: "t1",
             starts_at: "2026-08-10T00:00:00.000Z",
             ends_at: "2026-08-10T04:00:00.000Z",
+            timezone: "America/New_York",
             location_text: "Farmers Market",
             note: null,
             status: "scheduled",
@@ -221,6 +222,62 @@ describe("getDirectoryTrucks", () => {
     });
   });
 
+  // The production bug: this label is built on the server (UTC) and never
+  // changes in the browser, so /trucks, state and city pages showed
+  // "Thu, Nov 5, 9:00 PM" to everyone.
+  it("labels the next stop in the stop's own timezone", async () => {
+    mockSupabaseTables({
+      public_trucks: { data: [makeTruckRow()], error: null },
+      upcoming_stops: {
+        data: [
+          {
+            id: "s1",
+            truck_id: "t1",
+            starts_at: "2026-11-05T21:00:00+00:00",
+            ends_at: "2026-11-06T00:00:00+00:00",
+            timezone: "America/New_York",
+            location_text: "Flywheel Brewing",
+            note: null,
+            status: "scheduled",
+            event_image_url: null,
+          },
+        ],
+        error: null,
+      },
+    });
+
+    const [truck] = await getDirectoryTrucks(new Date("2026-11-02T01:00:00.000Z"));
+
+    expect(truck.nextStop?.whenLabel).toBe("Thu, Nov 5, 4:00 PM EST – 7:00 PM EST");
+  });
+
+  it("doesn't rank a truck as 'upcoming' on a stop with no timezone", async () => {
+    mockSupabaseTables({
+      public_trucks: { data: [makeTruckRow()], error: null },
+      upcoming_stops: {
+        data: [
+          {
+            id: "s1",
+            truck_id: "t1",
+            starts_at: "2026-08-10T00:00:00.000Z",
+            ends_at: "2026-08-10T04:00:00.000Z",
+            timezone: null,
+            location_text: "Farmers Market",
+            note: null,
+            status: "scheduled",
+            event_image_url: null,
+          },
+        ],
+        error: null,
+      },
+    });
+
+    const [truck] = await getDirectoryTrucks(NOW);
+
+    expect(truck.tier).toBe("ordinary");
+    expect(truck.nextStop).toBeNull();
+  });
+
   it("ignores a cancelled stop and falls back to 'ordinary'", async () => {
     mockSupabaseTables({
       public_trucks: { data: [makeTruckRow()], error: null },
@@ -231,6 +288,7 @@ describe("getDirectoryTrucks", () => {
             truck_id: "t1",
             starts_at: "2026-08-10T00:00:00.000Z",
             ends_at: "2026-08-10T04:00:00.000Z",
+            timezone: "America/New_York",
             location_text: "Farmers Market",
             note: null,
             status: "cancelled",

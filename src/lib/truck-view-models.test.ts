@@ -84,3 +84,52 @@ describe("StatusBar's view model — the one deliberate exception", () => {
     expect(info.service_area).toBe(SENSITIVE_TRUCK.service_area);
   });
 });
+
+describe("toUpcomingStopsInfo", () => {
+  const NOW = new Date("2026-11-02T01:00:00.000Z");
+  const base = {
+    timezone: "America/New_York",
+    location_text: "Flywheel Brewing",
+    status: "scheduled" as const,
+  };
+
+  it("hands the Client Component finished local-time text, with no raw timestamps to re-format", () => {
+    const info = toUpcomingStopsInfo(
+      makeTruck({
+        upcomingStops: [
+          { ...base, id: "s1", starts_at: "2026-11-05T21:00:00+00:00", ends_at: "2026-11-06T00:00:00+00:00" },
+        ],
+      }),
+      NOW
+    );
+
+    expect(info.stops).toEqual([
+      {
+        id: "s1",
+        location_text: "Flywheel Brewing",
+        status: "scheduled",
+        whenLabel: "Thu, Nov 5, 4:00 PM EST – 7:00 PM EST",
+        monthLabel: "Nov",
+        dayLabel: "5",
+      },
+    ]);
+    expect(JSON.stringify(info)).not.toContain("2026-11-05T21:00");
+  });
+
+  it("leaves out ended, cancelled and zone-less stops", () => {
+    const future = { starts_at: "2026-11-05T21:00:00Z", ends_at: "2026-11-06T00:00:00Z" };
+    const info = toUpcomingStopsInfo(
+      makeTruck({
+        upcomingStops: [
+          { ...base, id: "ended", starts_at: "2026-11-01T16:00:00Z", ends_at: "2026-11-01T20:00:00Z" },
+          { ...base, ...future, id: "cancelled", status: "cancelled" },
+          { ...base, ...future, id: "no-zone", timezone: null },
+          { ...base, ...future, id: "keep" },
+        ],
+      }),
+      NOW
+    );
+
+    expect(info.stops.map((stop) => stop.id)).toEqual(["keep"]);
+  });
+});

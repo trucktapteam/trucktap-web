@@ -27,7 +27,8 @@ describe("TruckListingCard", () => {
     render(<TruckListingCard truck={truck} />);
 
     expect(screen.getByText("Upcoming")).toBeInTheDocument();
-    expect(screen.getByText("Mon, Aug 10 · Farmers Market")).toBeInTheDocument();
+    expect(screen.getByText("Mon, Aug 10")).toBeInTheDocument();
+    expect(screen.getByText("Farmers Market")).toBeInTheDocument();
   });
 
   it("shows 'Not live right now' for an ordinary truck, never implying it's as active as a live one", () => {

@@ -1,4 +1,6 @@
-import type { Truck } from "./types";
+import { getUpcomingStops } from "./format";
+import { formatStopTime, type StopTimeLabels } from "./stop-time";
+import type { Truck, UpcomingStop } from "./types";
 
 /**
  * Narrow, purpose-built view models for every Client Component the truck
@@ -50,11 +52,25 @@ export function toQuickActionsInfo(truck: Truck): QuickActionsInfo {
   return { phone, name };
 }
 
-export type UpcomingStopsInfo = Pick<Truck, "upcomingStops" | "name">;
+export type UpcomingStopView = Pick<UpcomingStop, "id" | "location_text" | "note" | "status" | "flyer_image"> &
+  StopTimeLabels;
 
-export function toUpcomingStopsInfo(truck: Truck): UpcomingStopsInfo {
-  const { upcomingStops, name } = truck;
-  return { upcomingStops, name };
+export type UpcomingStopsInfo = { name: string; stops: UpcomingStopView[] };
+
+/**
+ * Which stops to show and their display text are both settled here, on the
+ * server, so UpcomingStopsSection renders identical text during server
+ * rendering and hydration: it never touches a Date or a clock.
+ */
+export function toUpcomingStopsInfo(truck: Truck, now: Date = new Date()): UpcomingStopsInfo {
+  const stops: UpcomingStopView[] = [];
+  for (const stop of getUpcomingStops(truck, now)) {
+    const time = formatStopTime(stop, now);
+    if (!time) continue;
+    const { id, location_text, note, status, flyer_image } = stop;
+    stops.push({ id, location_text, note, status, flyer_image, ...time });
+  }
+  return { name: truck.name, stops };
 }
 
 export type GallerySectionInfo = Pick<Truck, "gallery_images" | "name">;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { makeTruck } from "@/lib/test-fixtures";
+import { toUpcomingStopsInfo } from "@/lib/truck-view-models";
 import { MenuSection } from "./MenuSection";
 import { UpcomingStopsSection } from "./UpcomingStopsSection";
 import { GallerySection } from "./GallerySection";
@@ -43,7 +44,7 @@ describe("MenuSection", () => {
 
 describe("UpcomingStopsSection", () => {
   it("renders nothing when there are no upcoming stops", () => {
-    const { container } = render(<UpcomingStopsSection truck={makeTruck()} />);
+    const { container } = render(<UpcomingStopsSection truck={toUpcomingStopsInfo(makeTruck(), NOW)} />);
     expect(container).toBeEmptyDOMElement();
   });
 
@@ -54,12 +55,13 @@ describe("UpcomingStopsSection", () => {
           id: "s1",
           starts_at: "2026-07-30T00:00:00.000Z",
           ends_at: "2026-07-30T04:00:00.000Z",
+          timezone: "America/New_York",
           location_text: "Old spot",
           status: "scheduled",
         },
       ],
     });
-    const { container } = render(<UpcomingStopsSection truck={truck} />);
+    const { container } = render(<UpcomingStopsSection truck={toUpcomingStopsInfo(truck, NOW)} />);
     expect(container).toBeEmptyDOMElement();
   });
 
@@ -70,12 +72,13 @@ describe("UpcomingStopsSection", () => {
           id: "s1",
           starts_at: "2026-08-10T00:00:00.000Z",
           ends_at: "2026-08-10T04:00:00.000Z",
+          timezone: "America/New_York",
           location_text: "Farmers Market",
           status: "scheduled",
         },
       ],
     });
-    render(<UpcomingStopsSection truck={truck} />);
+    render(<UpcomingStopsSection truck={toUpcomingStopsInfo(truck, NOW)} />);
     expect(screen.getByText("Upcoming Stops")).toBeInTheDocument();
     expect(screen.getByText("Farmers Market")).toBeInTheDocument();
   });
@@ -85,6 +88,7 @@ describe("UpcomingStopsSection", () => {
       id: `s${i}`,
       starts_at: `2026-08-${String(10 + i).padStart(2, "0")}T00:00:00.000Z`,
       ends_at: `2026-08-${String(10 + i).padStart(2, "0")}T04:00:00.000Z`,
+      timezone: "America/New_York",
       location_text: `Stop ${i}`,
       status: "scheduled" as const,
     }));
@@ -92,14 +96,14 @@ describe("UpcomingStopsSection", () => {
 
   it("does not show a toggle when there are 5 or fewer stops", () => {
     const truck = makeTruck({ upcomingStops: makeFutureStops(5) });
-    render(<UpcomingStopsSection truck={truck} />);
+    render(<UpcomingStopsSection truck={toUpcomingStopsInfo(truck, NOW)} />);
     expect(screen.getAllByText(/Stop \d/)).toHaveLength(5);
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("shows only the first 5 stops with a working 'Show all' / 'Show fewer' toggle when there are more", () => {
     const truck = makeTruck({ upcomingStops: makeFutureStops(8) });
-    render(<UpcomingStopsSection truck={truck} />);
+    render(<UpcomingStopsSection truck={toUpcomingStopsInfo(truck, NOW)} />);
 
     expect(screen.getAllByText(/Stop \d/)).toHaveLength(5);
     const toggle = screen.getByRole("button", { name: "Show all 8 upcoming stops" });

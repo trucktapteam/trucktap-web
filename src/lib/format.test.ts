@@ -1,42 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { formatDateTime, getActiveAnnouncements, getUpcomingStops, isAnnouncementActive } from "./format";
+import { getActiveAnnouncements, getUpcomingStops, isAnnouncementActive } from "./format";
 import { makeTruck } from "./test-fixtures";
 
 const NOW = new Date("2026-08-02T12:00:00.000Z");
 
-describe("formatDateTime", () => {
-  // Regression test for a real production hydration bug: UpcomingStopsSection
-  // is a Client Component, so Next renders it once on the server and again
-  // in the browser during hydration. Without an explicit `timeZone`,
-  // `toLocaleString` resolves the *runtime's own* zone — the server (e.g.
-  // Vercel, UTC) and a visitor's browser (whatever zone they're in) can
-  // legitimately disagree, producing two different strings for the same
-  // instant and a guaranteed React hydration mismatch (error #418).
-  // Confirmed live: production served "3:00 PM" server-side but hydrated to
-  // "11:00 AM" in an America/New_York browser for the same stop.
-  it("with an explicit timeZone, is deterministic regardless of the caller's own zone", () => {
-    expect(formatDateTime("2026-08-05T15:00:00.000Z", "UTC")).toBe("Wed, Aug 5, 3:00 PM");
-  });
-
-  it("without a timeZone, resolves the ambient runtime zone (the deliberate post-mount behavior)", () => {
-    // No explicit assertion on the resulting hour here — the point is that
-    // this call path exists and is intentionally zone-sensitive; asserting
-    // a specific hour would just hardcode this test's own machine's zone.
-    // UpcomingStopsSection.test.tsx exercises the actual mount-driven
-    // switch between this and the UTC-forced call above.
-    expect(formatDateTime("2026-08-05T15:00:00.000Z")).toMatch(/^Wed, Aug 5, \d{1,2}:\d{2} [AP]M$/);
-  });
-});
-
-// This policy must match the Expo app's own getAnnouncementExpiresAt /
-// isAnnouncementActive (contexts/AppContext.tsx) exactly — the site and
-// the app rendering different things for the same truck is the bug, not
-// a style choice. Confirmed in production: Güero's Salsa and More has a
-// grand-opening announcement from 2026-05-30 with no `expires_at` at all
-// (created before that field existed) — the old web logic treated a
-// missing `expires_at` as "never expires" and showed it indefinitely; the
-// real app policy has always fallen back to 7 days after `timestamp`,
-// which is long past for that post.
 describe("isAnnouncementActive", () => {
   it("is active with time to spare before an explicit expires_at", () => {
     const announcement = { timestamp: NOW.toISOString(), expires_at: "2026-08-02T18:00:00.000Z" };
@@ -145,6 +112,7 @@ describe("getUpcomingStops", () => {
           id: "s1",
           starts_at: "2026-08-05T00:00:00.000Z",
           ends_at: "2026-08-05T04:00:00.000Z",
+          timezone: "America/New_York",
           location_text: "Somewhere",
           status: "cancelled",
         },
@@ -160,6 +128,7 @@ describe("getUpcomingStops", () => {
           id: "s1",
           starts_at: "2026-08-05T00:00:00.000Z",
           ends_at: "2026-08-05T04:00:00.000Z",
+          timezone: "America/New_York",
           location_text: "Somewhere",
           status: "completed",
         },
@@ -175,6 +144,7 @@ describe("getUpcomingStops", () => {
           id: "s1",
           starts_at: "2026-07-30T00:00:00.000Z",
           ends_at: "2026-07-30T04:00:00.000Z",
+          timezone: "America/New_York",
           location_text: "Old spot",
           status: "scheduled",
         },
@@ -190,6 +160,7 @@ describe("getUpcomingStops", () => {
           id: "s1",
           starts_at: "2026-08-05T00:00:00.000Z",
           ends_at: "2026-08-05T04:00:00.000Z",
+          timezone: "America/New_York",
           location_text: "A",
           status: "scheduled",
         },
@@ -197,6 +168,7 @@ describe("getUpcomingStops", () => {
           id: "s2",
           starts_at: "2026-08-06T00:00:00.000Z",
           ends_at: "2026-08-06T04:00:00.000Z",
+          timezone: "America/New_York",
           location_text: "B",
           status: "delayed",
         },
@@ -204,12 +176,29 @@ describe("getUpcomingStops", () => {
           id: "s3",
           starts_at: "2026-08-07T00:00:00.000Z",
           ends_at: "2026-08-07T04:00:00.000Z",
+          timezone: "America/New_York",
           location_text: "C",
           status: "sold_out",
         },
       ],
     });
     expect(getUpcomingStops(truck, NOW).map((s) => s.id)).toEqual(["s1", "s2", "s3"]);
+  });
+
+  it.each([[null], [""], ["Not/AZone"]])("excludes a stop whose timezone is %s rather than guess", (timezone) => {
+    const truck = makeTruck({
+      upcomingStops: [
+        {
+          id: "s1",
+          starts_at: "2026-08-05T00:00:00.000Z",
+          ends_at: "2026-08-05T04:00:00.000Z",
+          timezone,
+          location_text: "Somewhere",
+          status: "scheduled",
+        },
+      ],
+    });
+    expect(getUpcomingStops(truck, NOW)).toEqual([]);
   });
 
   it("returns an empty array when there are no stops", () => {

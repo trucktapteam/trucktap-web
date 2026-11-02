@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { makeTruck } from "@/lib/test-fixtures";
+import { toUpcomingStopsInfo } from "@/lib/truck-view-models";
 import { GallerySection } from "./GallerySection";
 import { MenuSection } from "./MenuSection";
 import { UpcomingStopsSection } from "./UpcomingStopsSection";
@@ -31,6 +32,7 @@ function renderAllSections() {
         id: "stop-1",
         starts_at: "2026-08-10T00:00:00.000Z",
         ends_at: "2026-08-10T04:00:00.000Z",
+        timezone: "America/New_York",
         location_text: "Farmers Market",
         status: "scheduled",
         flyer_image: FLYER_URL,
@@ -40,7 +42,7 @@ function renderAllSections() {
 
   render(
     <>
-      <UpcomingStopsSection truck={truck} />
+      <UpcomingStopsSection truck={toUpcomingStopsInfo(truck, new Date("2026-08-02T12:00:00.000Z"))} />
       <GallerySection truck={truck} />
       <MenuSection truck={truck} />
     </>

@@ -72,6 +72,8 @@ export type UpcomingStop = {
   id: string;
   starts_at: string;
   ends_at: string;
+  /** IANA zone the stop happens in, e.g. "America/New_York". */
+  timezone: string | null;
   location_text: string;
   note?: string;
   status: "scheduled" | "delayed" | "cancelled" | "sold_out" | "completed";

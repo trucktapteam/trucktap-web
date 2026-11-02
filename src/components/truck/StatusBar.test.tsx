@@ -44,6 +44,9 @@ describe("StatusBar freshness text", () => {
   });
 
   it("appends the upcoming-stops hint to the neutral fallback when the truck has upcoming stops", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+
     const truck = makeTruck({
       is_open: false,
       last_live_updated_at: null,
@@ -52,6 +55,7 @@ describe("StatusBar freshness text", () => {
           id: "s1",
           starts_at: "2026-08-10T00:00:00.000Z",
           ends_at: "2026-08-10T04:00:00.000Z",
+          timezone: "America/New_York",
           location_text: "Farmers Market",
           status: "scheduled",
         },

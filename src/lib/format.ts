@@ -1,3 +1,4 @@
+import { isValidTimeZone } from "./stop-time";
 import type { Announcement, Truck } from "./types";
 
 export function formatCurrency(amount: number): string {
@@ -24,28 +25,6 @@ export function formatRelativeTime(iso: string, now: Date = new Date()): string 
   if (diffDays < 7) return `${diffDays} days ago`;
 
   return `on ${then.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
-}
-
-/**
- * `timeZone` is optional and deliberately not defaulted to the runtime's
- * own zone: this is called from a Client Component (UpcomingStopsSection),
- * which Next.js renders once on the server and once again in the browser
- * during hydration. Server and browser can be in different zones (Vercel's
- * functions run in UTC; a visitor's browser doesn't), so letting each call
- * resolve `Intl`'s ambient zone independently produces two different
- * strings for the same instant — a guaranteed hydration text mismatch.
- * Callers pass an explicit zone (or omit it for a deliberate second pass —
- * see UpcomingStopsSection's `mounted` flag) so the two renders can agree.
- */
-export function formatDateTime(iso: string, timeZone?: string): string {
-  return new Date(iso).toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    ...(timeZone ? { timeZone } : {}),
-  });
 }
 
 export type LiveStatus =
@@ -143,10 +122,15 @@ export function getActiveAnnouncements(truck: Pick<Truck, "announcements">, now:
   return truck.announcements.filter((a) => a.message.trim() !== "" && isAnnouncementActive(a, now));
 }
 
-/** Cancelled/completed stops, and anything that has already ended, never show. */
+/**
+ * Cancelled/completed stops, anything that has already ended, and anything
+ * without a usable timezone never show. Without a zone there's no way to know
+ * the stop's local time or even its local date, and it is never guessed.
+ */
 export function getUpcomingStops(truck: Pick<Truck, "upcomingStops">, now: Date = new Date()) {
   return truck.upcomingStops.filter((s) => {
     if (s.status === "cancelled" || s.status === "completed") return false;
+    if (!isValidTimeZone(s.timezone)) return false;
     return new Date(s.ends_at).getTime() > now.getTime();
   });
 }

@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "./supabase/server";
 import { formatBasedNearLocation } from "./location";
-import { formatDateTime, getLiveStatus, getUpcomingStops } from "./format";
+import { getLiveStatus, getUpcomingStops } from "./format";
+import { formatStopTime } from "./stop-time";
 import type { UpcomingStop } from "./types";
 
 /**
@@ -35,6 +36,7 @@ type UpcomingStopRow = {
   truck_id: string;
   starts_at: string;
   ends_at: string;
+  timezone: string | null;
   location_text: string;
   note: string | null;
   status: UpcomingStop["status"];
@@ -116,7 +118,7 @@ export async function getDirectoryTrucks(now: Date = new Date(), filter?: Direct
     ids.length > 0
       ? await supabase
           .from("upcoming_stops")
-          .select("id, truck_id, starts_at, ends_at, location_text, note, status, event_image_url")
+          .select("id, truck_id, starts_at, ends_at, timezone, location_text, note, status, event_image_url")
           .in("truck_id", ids)
           .order("starts_at", { ascending: true })
           .returns<UpcomingStopRow[]>()
@@ -130,6 +132,7 @@ export async function getDirectoryTrucks(now: Date = new Date(), filter?: Direct
       id: stop.id,
       starts_at: stop.starts_at,
       ends_at: stop.ends_at,
+      timezone: stop.timezone,
       location_text: stop.location_text,
       note: stop.note ?? undefined,
       status: stop.status,
@@ -144,8 +147,9 @@ export async function getDirectoryTrucks(now: Date = new Date(), filter?: Direct
     const liveStatus = getLiveStatus(row, now);
     const eligibleStops = getUpcomingStops({ upcomingStops: stopsByTruckId.get(row.id) ?? [] }, now);
     const nextStopRow = eligibleStops[0] ?? null;
+    const nextStopTime = nextStopRow ? formatStopTime(nextStopRow, now) : null;
 
-    const tier: DirectoryTier = liveStatus.kind === "live" ? "live" : nextStopRow ? "upcoming" : "ordinary";
+    const tier: DirectoryTier = liveStatus.kind === "live" ? "live" : nextStopTime ? "upcoming" : "ordinary";
 
     return {
       id: row.id,
@@ -159,10 +163,10 @@ export async function getDirectoryTrucks(now: Date = new Date(), filter?: Direct
       lastLiveUpdatedAt: row.last_live_updated_at,
       freshnessLabel: liveStatus.kind === "live" ? liveStatus.freshnessLabel : liveStatus.lastSeenLabel,
       basedNear: formatBasedNearLocation(row.service_area),
-      nextStop: nextStopRow
+      nextStop: nextStopRow && nextStopTime
         ? {
             startsAt: nextStopRow.starts_at,
-            whenLabel: formatDateTime(nextStopRow.starts_at),
+            whenLabel: nextStopTime.whenLabel,
             locationText: nextStopRow.location_text,
           }
         : null,
