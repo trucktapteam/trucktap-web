@@ -93,6 +93,18 @@ describe("buildCitySchedule", () => {
     expect(days[1].stops.map((s) => s.timeLabel)).toEqual(["10:00 AM EST – 2:00 PM EST", "12:00 PM EST – 4:00 PM EST"]);
   });
 
+  it("orders same-time stops by truck name, whatever order the database returns", () => {
+    const expected = ["tractor", "pritchard"]; // F-Bomb before Sunny Girl's
+    expect(buildCitySchedule("elizabethtown-ky", [PRITCHARD, TRACTOR], TRUCKS, NOW)[0].stops.map((s) => s.id)).toEqual(expected);
+    expect(buildCitySchedule("elizabethtown-ky", [TRACTOR, PRITCHARD], TRUCKS, NOW)[0].stops.map((s) => s.id)).toEqual(expected);
+  });
+
+  it("orders same-time stops from the same truck by stop id", () => {
+    const a = { ...TRACTOR, id: "a-stop" };
+    const b = { ...TRACTOR, id: "b-stop" };
+    expect(buildCitySchedule("elizabethtown-ky", [b, a], TRUCKS, NOW)[0].stops.map((s) => s.id)).toEqual(["a-stop", "b-stop"]);
+  });
+
   it("keeps an 8:00 PM stop on its local date, not the next UTC date", () => {
     const evening = stop("evening", "fbomb", "2026-11-06T01:00:00Z", "2026-11-06T03:00:00Z", "Flywheel Brewing", 37.6921, -85.8617);
     const [day] = buildCitySchedule("elizabethtown-ky", [evening], TRUCKS, NOW);

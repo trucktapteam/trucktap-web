@@ -65,8 +65,9 @@ export type CityScheduleDay = { key: string; label: string; stops: CityScheduleS
 
 /**
  * Pure grouping step: keeps stops inside the city's area and the schedule
- * window, sorts them by start time, and groups them by the calendar date
- * where each stop happens. A stop with missing coordinates, an unusable
+ * window, sorts them by start time, then truck name, then stop id so the order
+ * never varies between loads, and groups them by the calendar date where
+ * each stop happens. A stop with missing coordinates, an unusable
  * timezone, or a truck that isn't public is left out, never guessed at.
  */
 export function buildCitySchedule(
@@ -92,8 +93,12 @@ export function buildCitySchedule(
   const rowById = new Map(nearby.map((stop) => [stop.id, stop]));
 
   const asStops: UpcomingStop[] = nearby.map((row) => ({ ...row, note: row.note ?? undefined }));
+  const truckNameOf = (stopId: string) => truckById.get(rowById.get(stopId)?.truck_id ?? "")?.name ?? "";
   const upcoming = getUpcomingStops({ upcomingStops: asStops }, now).sort(
-    (a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime()
+    (a, b) =>
+      new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime() ||
+      truckNameOf(a.id).localeCompare(truckNameOf(b.id), "en") ||
+      a.id.localeCompare(b.id, "en")
   );
 
   const days = new Map<string, CityScheduleDay>();
